@@ -86,13 +86,14 @@ public class Client extends Thread {
 
 				} else if (commandList[0].equals("message")) {
 					String sentence = "";
-					for (int i = 0; i < command.length(); i++) {
+					for (int i = 0; i < commandList.length; i++) {
 						if (sentence != null) {
 							sentence = commandList[i];
 						} else if (i >= 2 && sentence == null) {
 							sentence = sentence + " " + commandList[i];
 						}
 					}
+					
 					String message = commandList[1] + sentence;
 					Packet messagePacket = new Packet(auth, commandList[0], "0", "0", message);
 					// ObjectOutputStream oos = new
@@ -109,7 +110,7 @@ public class Client extends Thread {
 					continue;
 				} else if (commandList[0].equals("broadcast")) {
 					String sentence = "";
-					for (int i = 0; i < command.length(); i++) {
+					for (int i = 0; i < commandList.length; i++) {
 						if (sentence != null) {
 							sentence = commandList[i];
 						} else if (i >= 1 && sentence == null) {
@@ -137,44 +138,45 @@ public class Client extends Thread {
 	@Override
 	public void run() {
 		System.out.println("Prepare to read the packet");
-		/*
-		 * ObjectInputStream ois; System.out.println("Create the object"); try {
-		 * System.out.println("Get the packet"); ois = new
-		 * ObjectInputStream(clientSocket.getInputStream()); } catch (IOException e) {
-		 * // TODO Auto-generated catch block e.printStackTrace(); return; }
-		 */
-		/*Packet receivedPacket;
-		try {
-			receivedPacket = Packet.fromString((String) ois.readObject());
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return;
-		}*/
-		//System.out.println(receivedPacket.getMessage().toString());
-		while (true) {
-			//System.out.println("Analyse the packet");
 
-			Packet receivedPacket;
+		//System.out.println(receivedPacket.getMessage().toString());
+
+			String readBuffer;
 			try {
-				receivedPacket = Packet.fromString((String) ois.readObject());
-			} catch (ClassNotFoundException | IOException e) {
+				readBuffer = (String)ois.readObject();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return;
+			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				return;
 			}
+			//Packet receivedPacket = Packet.fromString(readBuffer);
+			System.out.println(Packet.fromString(readBuffer).getMessage().toString());
+		while (true) {
+			//System.out.println("Analyse the packet");
+
+			Packet receivedPacket = Packet.fromString(readBuffer);
+			//try {
+				//receivedPacket = Packet.fromString(readBuffer);
+			//} catch (ClassNotFoundException | IOException e) {
+				// TODO Auto-generated catch block
+				//e.printStackTrace();
+				//return;
+			//}
+			
 			System.out.println(receivedPacket.getMessage().toString());
 			//System.out.println("Get the request");
 			if (receivedPacket.getAuth().equals("true") && auth.equals("false")
 					&& receivedPacket.getRequest().equals("login")) {
 				auth = "true";
+				System.out.println(receivedPacket.getMessage().toString() + " at if condition");
 			}
 			if (receivedPacket.getRequest().equals("timeout")) {
 				auth = "false";
+				System.out.println(receivedPacket.getMessage().toString());
 			}
 			if (receivedPacket.getRequest().equals("logout")) {
 				auth = "false";
