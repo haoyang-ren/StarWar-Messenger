@@ -23,7 +23,8 @@ public class Client extends Thread {
 
     static Socket clientSocket;
     static String auth = "false";
-
+    static ObjectOutputStream oos;
+    
     public Client(Socket clientSocket) {
         this.clientSocket = clientSocket;
     }
@@ -42,6 +43,7 @@ public class Client extends Thread {
         clientSocket = new Socket(server_IP, server_port);
         // Start the new thread
         System.out.println("Prepare to get in the new thread");
+        oos = new ObjectOutputStream(clientSocket.getOutputStream());
         Client client = new Client(clientSocket);
         client.start();
 
@@ -57,7 +59,7 @@ public class Client extends Thread {
                 Packet loginPacket = new Packet(auth, "login", username,
                         password, login);
                 //System.out.println("packet has already created.");
-                ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+                //ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
                 oos.writeObject(Packet.buildString(loginPacket));
                 //System.out.println("packet has already sent.");
             } else {
@@ -73,7 +75,7 @@ public class Client extends Thread {
                 }
                 if (commandList[0].equals("logout") || commandList[0].equals("whoelse")) {
                     Packet requestPacket = new Packet(auth, commandList[0], null, null, null);
-                    ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+                    //ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(requestPacket));
                     continue;
 
@@ -89,14 +91,14 @@ public class Client extends Thread {
                     String message = commandList[1] + sentence;
                     Packet messagePacket = new Packet(auth, commandList[0], "0",
                             "0", message);
-                    ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+                    //ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(messagePacket));
                     continue;
 
                 } else if (commandList[0].equals("whoelsesince") || commandList[0].equals("block") || commandList[0].equals("unblock")) {
                     Packet requestPacket = new Packet(auth, commandList[0], "0",
                             "0", commandList[1]);
-                    ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+                    //ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(requestPacket));
                     continue;
                 } else if (commandList[0].equals("broadcast")) {
@@ -110,13 +112,13 @@ public class Client extends Thread {
                     }
                     Packet messagePacket = new Packet(auth, commandList[0], "0",
                             "0", sentence);
-                    ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+                    //ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(messagePacket));
                     continue;
                 } else {
                     Packet otherPacket = new Packet(auth, commandList[0], "0",
                             "0", null);
-                    ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+                    //ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(otherPacket));
                     continue;
                 }
