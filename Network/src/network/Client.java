@@ -21,10 +21,10 @@ import java.util.logging.Logger;
  */
 public class Client extends Thread {
 
-	static Socket clientSocket;
+	Socket clientSocket;
 	static String auth = "false";
-	static ObjectOutputStream oos;
-	static ObjectInputStream ois;
+	ObjectOutputStream oos;
+	ObjectInputStream ois;
 
 	public Client(Socket clientSocket, ObjectInputStream ois) {
 		this.clientSocket = clientSocket;
@@ -42,11 +42,11 @@ public class Client extends Thread {
 		// String server_Name = "localhost";
 		Scanner input = new Scanner(System.in);
 		// Create a new client socket
-		clientSocket = new Socket(server_IP, server_port);
+		Socket clientSocket = new Socket(server_IP, server_port);
 		// Start the new thread
 		System.out.println("Prepare to get in the new thread");
-		oos = new ObjectOutputStream(clientSocket.getOutputStream());
-		ois = new ObjectInputStream(clientSocket.getInputStream());
+		ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+		ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
 		Client client = new Client(clientSocket, ois);
 		client.start();
 
@@ -141,24 +141,29 @@ public class Client extends Thread {
 
 		//System.out.println(receivedPacket.getMessage().toString());
 
-			String readBuffer;
+			
+			//Packet receivedPacket = Packet.fromString(readBuffer);
+			//System.out.println(Packet.fromString(readBuffer).getMessage().toString());
+		while (true) {
+			//System.out.println("Analyse the packet");
+			String readBuffer = null;
+//			try {
 			try {
-				readBuffer = (String)ois.readObject();
+				readBuffer = ois.readObject().toString();
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-				return;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-				return;
 			}
-			//Packet receivedPacket = Packet.fromString(readBuffer);
-			System.out.println(Packet.fromString(readBuffer).getMessage().toString());
-		while (true) {
-			//System.out.println("Analyse the packet");
-
-			Packet receivedPacket = Packet.fromString(readBuffer);
+//			} catch (Exception e) {
+				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//				return;
+				
+//			}
+			
 			//try {
 				//receivedPacket = Packet.fromString(readBuffer);
 			//} catch (ClassNotFoundException | IOException e) {
@@ -166,21 +171,26 @@ public class Client extends Thread {
 				//e.printStackTrace();
 				//return;
 			//}
+			if (readBuffer == null)
+				continue;
+			
+			Packet receivedPacket = Packet.fromString(readBuffer);
 			
 			System.out.println(receivedPacket.getMessage().toString());
 			//System.out.println("Get the request");
 			if (receivedPacket.getAuth().equals("true") && auth.equals("false")
 					&& receivedPacket.getRequest().equals("login")) {
 				auth = "true";
-				System.out.println(receivedPacket.getMessage().toString() + " at if condition");
+				//System.out.println(receivedPacket.getMessage().toString() + " at if condition");
 			}
 			if (receivedPacket.getRequest().equals("timeout")) {
 				auth = "false";
-				System.out.println(receivedPacket.getMessage().toString());
+				//System.out.println(receivedPacket.getMessage().toString());
 			}
 			if (receivedPacket.getRequest().equals("logout")) {
 				auth = "false";
-				System.out.println(receivedPacket.getMessage().toString());
+				//System.out.println(receivedPacket.getMessage().toString() + " at if condition");
+			
 			}
 
 		}
