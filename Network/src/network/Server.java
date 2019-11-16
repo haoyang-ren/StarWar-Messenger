@@ -9,8 +9,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -37,9 +39,13 @@ public class Server extends Thread {
     static float blockDuration;
     static int timeout;
     private Socket connectionSocket;
+    ObjectOutputStream oos;
+    ObjectInputStream ois;
 
-    public Server(Socket connectionSocket) {
+    public Server(Socket connectionSocket, ObjectOutputStream oos, ObjectInputStream ois) {
         this.connectionSocket = connectionSocket;
+        this.oos = oos;
+        this.ois = ois;
     }
 
     public static void main(String[] args) throws IOException {
@@ -66,19 +72,25 @@ public class Server extends Thread {
         String line;
         while ((line = reader.readLine()) != null) {
             String[] word = line.split(" ");
-            System.out.println("name is " + word[0]);
-            System.out.println("password is " + word[1]);
+            //System.out.println("name is " + word[0]);
+            //System.out.println("password is " + word[1]);
             User user = new User(word[0], word[1], 0, null, false, null, null, null, 0);
             users.add(user);
-            line = reader.readLine();
 
         }
         reader.close();
+        
         // System.out.println("Program has arrived here");
         while (true) {
             // Get the connection socket and address
             Socket connectionSocket = serverSocket.accept();
             SocketAddress connectionAddress = connectionSocket.getRemoteSocketAddress();
+            OutputStream os =  connectionSocket.getOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(os);
+            
+            InputStream is =  connectionSocket.getInputStream();
+            ObjectInputStream ois = new ObjectInputStream(is);
+
             // Use connection socket to send current port number
             /*
 			 * DataOutputStream outToClient = new
@@ -86,8 +98,10 @@ public class Server extends Thread {
 			 * = String.valueOf(currentPort); outToClient.writeBytes(clientPortNumber);
 			 * connectionSocket.close();
              */
+            //Server server = new Server(connectionSocket, oos, ois);
+            Server server = new Server(connectionSocket, oos, ois);
+            server.setDaemon(true);
 
-            Server server = new Server(connectionSocket);
             server.start();
             // currentPort++;
         }
@@ -128,6 +142,12 @@ public class Server extends Thread {
                 if (user.getPassword().equals(password)) {
                     user.setOnline(true);
                     user.setSocket(connectionSocket);
+                    if(user.getSocket() == null){
+                        System.out.println("user don't have socket at login!");
+                    }else{
+                        System.out.println("user already have socket at login");
+                    }
+                    //System.out.println("user socket is " + user.getSocket().getInetAddress().toString() + user.getSocket().getLocalPort());
                     user.setBlock(0);
                     user.setTime(null);
 
@@ -148,26 +168,44 @@ public class Server extends Thread {
         if (source.equals(destination) == true) {
             result.add("false");
             result.add("Can not send message to yourself!");
+            System.out.println("In the first condition");
             return result;
         } else {
             for (User user : users) {
                 if (user.getUsername().equals(destination) && user.getBlackList().contains(source)) {
                     result.add("false");
                     result.add("You have been blocked by" + destination);
+                    System.out.println("In the second condition");
                     return result;
                 }
                 if (user.isOnline() == true) {
                     Packet messeagePacket = new Packet(auth, "message", "0", "0", content);
-                    ObjectOutputStream oos = new ObjectOutputStream(user.getSocket().getOutputStream());
+                    //oos = new ObjectOutputStream(user.getSocket().getOutputStream());
+                    //System.out.println("!!!user socket is " + user.getSocket().toString());
+                    System.out.println("In the third condition");
+                    if(user.getSocket() == null){
+                        System.out.println("user don't have socket!");
+                    }else{
+                        System.out.println("user already have socket!");
+                    }
+                    //oos = new ObjectOutputStream(user.getSocket().getOutputStream());
+                    
+                    //oos.writeObject(Packet.buildString(messeagePacket));
+                    //oos.flush();
+                    //oos.close();
+                    //ObjectOutputStream newoos = new ObjectOutputStream(user.getSocket().getOutputStream());
                     oos.writeObject(Packet.buildString(messeagePacket));
+                    
                     result.add("true");
                     result.add("online");
+                    System.out.println("In the forth condition");
                     return result;
                 } else {
                     String pending = "Pending :" + source + " " + "content";
                     user.getPending().add(pending);
                     result.add("true");
                     result.add("offline");
+                    System.out.println("In the fifth condition");
                     return result;
                 }
 
@@ -176,6 +214,7 @@ public class Server extends Thread {
         }
         result.add("false");
         result.add("Invalid user");
+        System.out.println("In the last condition");
         return result;
     }
 
@@ -187,6 +226,7 @@ public class Server extends Thread {
                 if (user.getBlackList().contains(source)) {
                     result.add("false");
                     result.add("Your message can not be broadcast to somme users");
+                    System.out.println("In the first condition");
                     return result;
                 } else {
                     Packet broadcastPacket = new Packet(auth, "broadcast", "0", "0", content);
@@ -195,10 +235,12 @@ public class Server extends Thread {
 
                     result.add("true");
                     result.add("Your message has been broadcast successfully!");
+                    System.out.println("In the second condition");
                     return result;
                 }
             }
         }
+        System.out.println("In the last condition");
         return result;
     }
 
@@ -307,202 +349,223 @@ public class Server extends Thread {
     public void run() {
         String[] command = {"login", "message", "logout", "broadcast", "block", "unblock", "whoelse", "whoelsesince"};
         List<String> commandList = Arrays.asList(command);
-            String auth = "false";
-            while (true) {
-                System.out.println("Recevied packet from client");
-                try {
-                    ObjectInputStream ois = new ObjectInputStream(connectionSocket.getInputStream());
-                    Packet receivedPacket = Packet.fromString((String) ois.readObject());
-                    System.out.println("Analyse request!");
-                    // Try to login the system
-                    if (auth.equals("false") == true && receivedPacket.getRequest().toString().equals("login")) {
-                        ArrayList<String> fl = login(receivedPacket.getUsername().toString(),
-                                receivedPacket.getPassword().toString(), connectionSocket, currentPort);
-                        
-                        if (fl.get(0).equals("false")) {
-                            Packet errorPacket = new Packet(auth, "error", "0", "0", fl.get(1));
-                            ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                            oos.writeObject(Packet.buildString(errorPacket));
-                        } else {
-                            auth = "true";
-                            Packet welcomePacket = new Packet(auth, "login", "0", "0", fl.get(1));
-                            ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                            oos.writeObject(Packet.buildString(welcomePacket));
-                            //System.out.println("Recevied the welcome packet!");
-                            Thread.sleep(50);
-                            for (User user : users) {
-                                if (user.getUsername().equals(receivedPacket.getUsername())) {
-                                    if (user.getPending() != null) {
-                                        for (String pending : user.getPending()) {
-                                            Packet pendingPacket = new Packet(auth, "message", "0", "0", pending);
-                                            ObjectOutputStream newoos = new ObjectOutputStream(
-                                                    connectionSocket.getOutputStream());
-                                            newoos.writeObject(Packet.buildString(pendingPacket));
-                                        }
-                                        user.setPending(null);
-                                    }
-                                }
-                            }
-                            for (User user : users) {
-                                if (user.isOnline() == true
-                                        && user.getUsername().equals(receivedPacket.getUsername()) == false) {
-                                    Socket userSocket = user.getSocket();
-                                    String duplicateLogin = receivedPacket.getUsername().toString() + "has logged in";
-                                    Packet duplicateLoginPacket = new Packet(auth, "notification", "0", "0",
-                                            duplicateLogin);
-                                    ObjectOutputStream newoos = new ObjectOutputStream(userSocket.getOutputStream());
-                                    newoos.writeObject(Packet.buildString(duplicateLoginPacket));
-                                }
-                            }
-                            connectionSocket.setSoTimeout(timeout);
-                        }
-                        continue;
-                    }
-                    if (auth.equals("true") && receivedPacket.getRequest().toString().equals("message") == true) {
-                        String strArray[] = receivedPacket.getMessage().toString().split(" ");
-                        String peername = strArray[0];
-                        String information = strArray[1];
-                        ArrayList<String> fl = sendMessage(receivedPacket.getUsername().toString(), peername,
-                                information);
-                        if (fl.get(0).equals("false")) {
-                            Packet messagePacket = new Packet(auth, "messageError", "0", "0", fl.get(1));
-                            ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                            oos.writeObject(Packet.buildString(messagePacket));
-                        }
-                        connectionSocket.setSoTimeout(timeout);
-                        continue;
-                    }
-                    if (auth.equals("true") && receivedPacket.getRequest().toString().equals("broadcast") == true) {
+        String auth = "false";
+        while (true) {
+            System.out.println("Recevied packet from client");
+            try {
+                //ObjectInputStream ois = new ObjectInputStream(connectionSocket.getInputStream());
+                Packet receivedPacket = Packet.fromString((String) this.ois.readObject());
+                System.out.println("Analyse request!");
+                System.out.println("auth is " + receivedPacket.getAuth());
+                System.out.println("request is " + receivedPacket.getRequest());
+                System.out.println("username is " + receivedPacket.getUsername());
+                System.out.println("password is " + receivedPacket.getPassword());
+                System.out.println("message is " + receivedPacket.getMessage());
+                // Try to login the system
+                if (auth.equals("false") == true && receivedPacket.getRequest().toString().equals("login")) {
+                    ArrayList<String> fl = login(receivedPacket.getUsername().toString(),
+                            receivedPacket.getPassword().toString(), connectionSocket, currentPort);
 
-                        ArrayList<String> fl = broadcast(receivedPacket.getUsername().toString(),
-                                receivedPacket.getMessage().toString());
-                        if (fl.get(0).equals("false")) {
-                            Packet errorPacket = new Packet(auth, "broadcastError", "0", "0", fl.get(1));
-                            ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                            oos.writeObject(Packet.buildString(errorPacket));
-                        }
-                        connectionSocket.setSoTimeout(timeout);
-                        continue;
-                    }
-                    if (auth.equals("true") && receivedPacket.getRequest().toString().equals("whoelse") == true) {
-
-                        ArrayList<String> fl = whoelse(receivedPacket.getUsername().toString());
-
-                        Packet whoelsePacket = new Packet(auth, "whoelse", "0", "0", fl.get(1));
-                        ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                        oos.writeObject(Packet.buildString(whoelsePacket));
-
-                        connectionSocket.setSoTimeout(timeout);
-                        continue;
-                    }
-                    if (auth.equals("true") && receivedPacket.getRequest().toString().equals("whoelsesince") == true) {
-                        ArrayList<String> fl = whoelsesince(receivedPacket.getUsername().toString(),
-                                Float.valueOf(receivedPacket.getMessage().toString()));
-
-                        Packet whoelsesincePacket = new Packet(auth, "whoelse", "0", "0", fl.get(1));
-                        ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                        oos.writeObject(Packet.buildString(whoelsesincePacket));
-
-                        connectionSocket.setSoTimeout(timeout);
-                        continue;
-                    }
-                    if (auth.equals("true") && receivedPacket.getRequest().toString().equals("block") == true) {
-
-                        ArrayList<String> fl = block(receivedPacket.getUsername().toString(),
-                                receivedPacket.getMessage().toString());
-                        if (fl.get(0).equals("true")) {
-
-                            Packet blockPacket = new Packet(auth, "block", "0", "0", fl.get(1));
-                            ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                            oos.writeObject(Packet.buildString(blockPacket));
-
-                            connectionSocket.setSoTimeout(timeout);
-                        } else {
-                            Packet blockErrorPacket = new Packet(auth, "blockError", "0", "0", fl.get(1));
-                            ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                            oos.writeObject(Packet.buildString(blockErrorPacket));
-
-                            connectionSocket.setSoTimeout(timeout);
-                        }
-                        continue;
-                    }
-                    if (auth.equals("true") && receivedPacket.getRequest().toString().equals("unblock") == true) {
-
-                        ArrayList<String> fl = unblock(receivedPacket.getUsername().toString(),
-                                receivedPacket.getMessage().toString());
-                        if (fl.get(0).equals("true")) {
-
-                            Packet blockPacket = new Packet(auth, "unblock", "0", "0", fl.get(1));
-                            ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                            oos.writeObject(Packet.buildString(blockPacket));
-
-                            connectionSocket.setSoTimeout(timeout);
-                        } else {
-                            Packet unblockErrorPacket = new Packet(auth, "unblockError", "0", "0", fl.get(1));
-                            ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                            oos.writeObject(Packet.buildString(unblockErrorPacket));
-
-                            connectionSocket.setSoTimeout(timeout);
-                        }
-                        continue;
-                    }
-                    if (auth.equals("true") && receivedPacket.getRequest().toString().equals("logout") == true) {
+                    if (fl.get(0).equals("false")) {
+                        Packet errorPacket = new Packet(auth, "error", "0", "0", fl.get(1));
+                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        oos.writeObject(Packet.buildString(errorPacket));
+                    } else {
+                        auth = "true";
+                        Packet welcomePacket = new Packet(auth, "login", "0", "0", fl.get(1));
+                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        oos.writeObject(Packet.buildString(welcomePacket));
+                        //System.out.println("Recevied the welcome packet!");
+                        Thread.sleep(50);
                         for (User user : users) {
                             if (user.getUsername().equals(receivedPacket.getUsername())) {
-                                user.setOnline(false);
-                                user.setSocket(null);
-                                user.setTime(LocalDateTime.now());
+                                if (user.getPending() != null) {
+                                    for (String pending : user.getPending()) {
+                                        Packet pendingPacket = new Packet(auth, "message", "0", "0", pending);
+                                        //ObjectOutputStream newoos = new ObjectOutputStream(
+                                        //connectionSocket.getOutputStream());
+                                        oos.writeObject(Packet.buildString(pendingPacket));
+                                    }
+                                    user.setPending(null);
+                                }
                             }
                         }
-                        System.out.println("try to handle log out!");
-                        String logoutInfo = receivedPacket.getUsername() + " has successfully logged out!";
-                        Packet logoutPacket = new Packet(auth, "logout", "0", "0", logoutInfo);
-                        ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                        oos.writeObject(Packet.buildString(logoutPacket));
-                        System.out.println("notify other users!");
                         for (User user : users) {
-                            if (user.isOnline() == true) {
-                                String notification = receivedPacket.getUsername() + "has already logged out!";
-                                Packet notificationPacket = new Packet(auth, "logout", "0", "0", notification);
-                                ObjectOutputStream newoos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                                newoos.writeObject(Packet.buildString(notificationPacket));
+                            if (user.isOnline() == true
+                                    && user.getUsername().equals(receivedPacket.getUsername()) == false) {
+                                Socket userSocket = user.getSocket();
+                                String duplicateLogin = receivedPacket.getUsername().toString() + " has logged in";
+                                Packet duplicateLoginPacket = new Packet(auth, "notification", "0", "0",
+                                        duplicateLogin);
+                                //ObjectOutputStream newoos = new ObjectOutputStream(userSocket.getOutputStream());
+                                //newoos.writeObject(Packet.buildString(duplicateLoginPacket));
+                                oos.writeObject(Packet.buildString(duplicateLoginPacket));
                             }
                         }
-                        auth = "false";
-                        continue;
+                        //connectionSocket.setSoTimeout(timeout);
                     }
-
-                    if (commandList.contains(receivedPacket) == false) {
-                        Packet unknownPacket = new Packet(auth, "error", "0", "0", "Unkown Command");
-                        ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                        oos.writeObject(Packet.buildString(unknownPacket));
-                        connectionSocket.setSoTimeout(timeout);
-                        continue;
+                    continue;
+                }
+                if (auth.equals("true") && receivedPacket.getRequest().toString().equals("message") == true) {
+                    String strArray[] = receivedPacket.getMessage().toString().split(" ");
+                    String peername = strArray[0];
+                    String information = strArray[0];
+                    ArrayList<String> fl = sendMessage(receivedPacket.getUsername().toString(), peername,
+                            information);
+                    if (fl.get(0).equals("false")) {
+                        Packet messagePacket = new Packet(auth, "messageError", "0", "0", fl.get(1));
+                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        oos.writeObject(Packet.buildString(messagePacket));
                     }
+                    //connectionSocket.setSoTimeout(timeout);
+                    continue;
+                }
+                if (auth.equals("true") && receivedPacket.getRequest().toString().equals("broadcast") == true) {
 
-                } catch (SocketTimeoutException ex) {
-                    String exceptionInfo = "Your connection has been closed due to Timeout!";
-                    /*Packet errorPacket = new Packet(auth, "timeout", "0", "0", exceptionInfo);
+                    ArrayList<String> fl = broadcast(receivedPacket.getUsername().toString(),
+                            receivedPacket.getMessage().toString());
+                    if (fl.get(0).equals("false")) {
+                        Packet errorPacket = new Packet(auth, "broadcastError", "0", "0", fl.get(1));
+                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        oos.writeObject(Packet.buildString(errorPacket));
+                    }
+                    //connectionSocket.setSoTimeout(timeout);
+                    continue;
+                }
+                if (auth.equals("true") && receivedPacket.getRequest().toString().equals("whoelse") == true) {
+
+                    ArrayList<String> fl = whoelse(receivedPacket.getUsername().toString());
+                    String strArray[] = new String[fl.size()];
+                    for (int i = 0; i < fl.size(); i++) {
+                        strArray[i] = fl.get(i);
+                    }
+                    String result = Arrays.toString(strArray);
+                    result = result.substring(1, result.length()-1);
+                    System.out.println("whoelse is "+ result);
+                    Packet whoelsePacket = new Packet(auth, "whoelse", "0", "0", result);
+                    //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                    oos.writeObject(Packet.buildString(whoelsePacket));
+
+                    //connectionSocket.setSoTimeout(timeout);
+                    continue;
+                }
+                if (auth.equals("true") && receivedPacket.getRequest().toString().equals("whoelsesince") == true) {
+                    ArrayList<String> fl = whoelsesince(receivedPacket.getUsername().toString(),
+                            Float.valueOf(receivedPacket.getMessage().toString()));
+                    String strArray[] = new String[fl.size()];
+                    for (int i = 0; i < fl.size(); i++) {
+                        strArray[i] = fl.get(i);
+                    }
+                    String result = Arrays.toString(strArray);
+                    result = result.substring(1, result.length()-1);
+                    System.out.println("whoelsesince is "+ result);
+                    Packet whoelsesincePacket = new Packet(auth, "whoelsesince", "0", "0", result);
+                    //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                    oos.writeObject(Packet.buildString(whoelsesincePacket));
+
+                    //connectionSocket.setSoTimeout(timeout);
+                    continue;
+                }
+                if (auth.equals("true") && receivedPacket.getRequest().toString().equals("block") == true) {
+
+                    ArrayList<String> fl = block(receivedPacket.getUsername().toString(),
+                            receivedPacket.getMessage().toString());
+                    if (fl.get(0).equals("true")) {
+
+                        Packet blockPacket = new Packet(auth, "block", "0", "0", fl.get(1));
+                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        oos.writeObject(Packet.buildString(blockPacket));
+
+                        //connectionSocket.setSoTimeout(timeout);
+                    } else {
+                        Packet blockErrorPacket = new Packet(auth, "blockError", "0", "0", fl.get(1));
+                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        oos.writeObject(Packet.buildString(blockErrorPacket));
+
+                        //connectionSocket.setSoTimeout(timeout);
+                    }
+                    continue;
+                }
+                if (auth.equals("true") && receivedPacket.getRequest().toString().equals("unblock") == true) {
+
+                    ArrayList<String> fl = unblock(receivedPacket.getUsername().toString(),
+                            receivedPacket.getMessage().toString());
+                    if (fl.get(0).equals("true")) {
+
+                        Packet blockPacket = new Packet(auth, "unblock", "0", "0", fl.get(1));
+                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        oos.writeObject(Packet.buildString(blockPacket));
+
+                        //connectionSocket.setSoTimeout(timeout);
+                    } else {
+                        Packet unblockErrorPacket = new Packet(auth, "unblockError", "0", "0", fl.get(1));
+                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        oos.writeObject(Packet.buildString(unblockErrorPacket));
+
+                        //connectionSocket.setSoTimeout(timeout);
+                    }
+                    continue;
+                }
+                if (auth.equals("true") && receivedPacket.getRequest().toString().equals("logout") == true) {
+                    for (User user : users) {
+                        if (user.getUsername().equals(receivedPacket.getUsername())) {
+                            user.setOnline(false);
+                            user.setSocket(null);
+                            user.setTime(LocalDateTime.now());
+                        }
+                    }
+                    System.out.println("try to handle log out!");
+                    String logoutInfo = receivedPacket.getUsername() + " has successfully logged out!";
+                    Packet logoutPacket = new Packet(auth, "logout", "0", "0", logoutInfo);
+                    //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                    oos.writeObject(Packet.buildString(logoutPacket));
+                    System.out.println("notify other users!");
+                    for (User user : users) {
+                        if (user.isOnline() == true) {
+                            String notification = receivedPacket.getUsername() + "has already logged out!";
+                            Packet notificationPacket = new Packet(auth, "logout", "0", "0", notification);
+                            //ObjectOutputStream newoos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                            oos.writeObject(Packet.buildString(notificationPacket));
+                        }
+                    }
+                    auth = "false";
+                    System.out.println("Get the end of log out");
+                    //connectionSocket.setSoTimeout(99999999);
+                    //break;
+                    continue;
+                }
+
+                if (commandList.contains(receivedPacket) == false) {
+                    Packet unknownPacket = new Packet(auth, "error", "0", "0", "Unkown Command");
+                    //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                    oos.writeObject(Packet.buildString(unknownPacket));
+                    //connectionSocket.setSoTimeout(timeout);
+                    continue;
+                }
+
+            } catch (SocketTimeoutException ex) {
+                String exceptionInfo = "Your connection has been closed due to Timeout!";
+                /*Packet errorPacket = new Packet(auth, "timeout", "0", "0", exceptionInfo);
                     ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(errorPacket));
                     connectionSocket.close();*/
-                    System.exit(1);
-                } catch (ClassNotFoundException ex) {
-                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                    /*String exceptionInfo = "Your packet can not be accepted by server!";
+                System.exit(1);
+            } catch (ClassNotFoundException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                /*String exceptionInfo = "Your packet can not be accepted by server!";
                     Packet errorPacket = new Packet(auth, "timeout", "0", "0", exceptionInfo);
                     ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(errorPacket));
                     connectionSocket.close();*/
-                    System.exit(1);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
+                System.exit(1);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
+            System.out.println("At the end of while loop!");
+        }
 
     }
 }
