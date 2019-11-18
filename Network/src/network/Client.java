@@ -21,179 +21,183 @@ import java.util.logging.Logger;
  */
 public class Client extends Thread {
 
-	Socket clientSocket;
-	static String auth = "false";
-	ObjectOutputStream oos;
-	ObjectInputStream ois;
+    Socket clientSocket;
+    static String auth = "false";
+    ObjectOutputStream oos;
+    ObjectInputStream ois;
 
-	public Client(Socket clientSocket, ObjectInputStream ois) {
-		this.clientSocket = clientSocket;
-		this.ois = ois;
-	}
+    public Client(Socket clientSocket, ObjectInputStream ois) {
+        this.clientSocket = clientSocket;
+        this.ois = ois;
+    }
 
-	public static void main(String[] args) throws Exception {
-		if (args.length != 2) {
-			System.out.println("Usage: java Client server_IP server_port");
-			System.exit(1);
-		}
-		// Get the server_IP and server_port from user input
-		InetAddress server_IP = InetAddress.getByName(args[0]);
-		int server_port = Integer.parseInt(args[1]);
-		// String server_Name = "localhost";
-		Scanner input = new Scanner(System.in);
-		// Create a new client socket
-		Socket clientSocket = new Socket(server_IP, server_port);
-		// Start the new thread
-		System.out.println("Prepare to get in the new thread");
-		ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
-		ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
-		Client client = new Client(clientSocket, ois);
-		client.start();
+    public static void main(String[] args) throws Exception {
+        if (args.length != 2) {
+            System.out.println("Usage: java Client server_IP server_port");
+            System.exit(1);
+        }
+        // Get the server_IP and server_port from user input
+        InetAddress server_IP = InetAddress.getByName(args[0]);
+        int server_port = Integer.parseInt(args[1]);
+        // String server_Name = "localhost";
+        Scanner input = new Scanner(System.in);
+        // Create a new client socket
+        Socket clientSocket = new Socket(server_IP, server_port);
+        // Start the new thread
+        System.out.println("Prepare to get in the new thread");
+        ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+        ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
+        Client client = new Client(clientSocket, ois);
+        client.start();
 
-		while (true) {
-			Thread.sleep(50);
-			if (auth.equals("false")) {
+        while (true) {
+            Thread.sleep(50);
+            System.out.println("Please Enter your Username: ");
+            String username = input.nextLine();
+            System.out.println("Please Enter your Password: ");
+            String password = input.nextLine();
 
-				System.out.println("Please Enter your Username: ");
-				String username = input.nextLine();
-				System.out.println("Please Enter your Password: ");
-				String password = input.nextLine();
-				String login = "User is trying to log in";
-				Packet loginPacket = new Packet(auth, "login", username, password, login);
-				// System.out.println("packet has already created.");
-				// ObjectOutputStream oos = new
-				// ObjectOutputStream(clientSocket.getOutputStream());
-				oos.writeObject(Packet.buildString(loginPacket));
-				// System.out.println("packet has already sent.");
-			} else {
-				String command = input.nextLine();
-				if (command.length() == 0) {
-					System.out.println("--Type help to see the available command--");
-					continue;
-				}
-				String[] commandList = command.split(" ");
-				if (commandList[0].equals("help")) {
-					System.out.println(
-							"Available Command List: logout message broadcast whoelse whoelsesince block unblock");
-					continue;
-				}
-				if (commandList[0].equals("logout") || commandList[0].equals("whoelse")) {
-					Packet requestPacket = new Packet(auth, commandList[0], null, null, null);
-					// ObjectOutputStream oos = new
-					// ObjectOutputStream(clientSocket.getOutputStream());
-					oos.writeObject(Packet.buildString(requestPacket));
-					continue;
+            if (auth.equals("false")) {
 
-				} else if (commandList[0].equals("message")) {
-					String sentence = "";
-					for (int i = 0; i < commandList.length; i++) {
-						if (sentence != null) {
-							sentence = commandList[i];
-						} else if (i >= 2 && sentence == null) {
-							sentence = sentence + " " + commandList[i];
-						}
-					}
-					
-					String message = commandList[1] + sentence;
-					Packet messagePacket = new Packet(auth, commandList[0], "0", "0", message);
-					// ObjectOutputStream oos = new
-					// ObjectOutputStream(clientSocket.getOutputStream());
-					oos.writeObject(Packet.buildString(messagePacket));
-					continue;
+                //System.out.println("Please Enter your Username: ");
+                //String username = input.nextLine();
+                //System.out.println("Please Enter your Password: ");
+                //String password = input.nextLine();
+                String login = "User is trying to log in";
+                Packet loginPacket = new Packet(auth, "login", username, password, login);
+                // System.out.println("packet has already created.");
+                // ObjectOutputStream oos = new
+                // ObjectOutputStream(clientSocket.getOutputStream());
+                oos.writeObject(Packet.buildString(loginPacket));
+                // System.out.println("packet has already sent.");
+            } else {
+                String command = input.nextLine();
+                if (command.length() == 0) {
+                    System.out.println("--Type help to see the available command--");
+                    continue;
+                }
+                String[] commandList = command.split(" ");
+                if (commandList[0].equals("help")) {
+                    System.out.println(
+                            "Available Command List: logout message broadcast whoelse whoelsesince block unblock");
+                    continue;
+                }
+                if (commandList[0].equals("logout") || commandList[0].equals("whoelse")) {
+                    Packet requestPacket = new Packet(auth, commandList[0], username, null, null);
+                    // ObjectOutputStream oos = new
+                    // ObjectOutputStream(clientSocket.getOutputStream());
+                    oos.writeObject(Packet.buildString(requestPacket));
+                    continue;
 
-				} else if (commandList[0].equals("whoelsesince") || commandList[0].equals("block")
-						|| commandList[0].equals("unblock")) {
-					Packet requestPacket = new Packet(auth, commandList[0], "0", "0", commandList[1]);
-					// ObjectOutputStream oos = new
-					// ObjectOutputStream(clientSocket.getOutputStream());
-					oos.writeObject(Packet.buildString(requestPacket));
-					continue;
-				} else if (commandList[0].equals("broadcast")) {
-					String sentence = "";
-					for (int i = 0; i < commandList.length; i++) {
-						if (sentence != null) {
-							sentence = commandList[i];
-						} else if (i >= 1 && sentence == null) {
-							sentence = sentence + " " + commandList[i];
-						}
-					}
-					Packet messagePacket = new Packet(auth, commandList[0], "0", "0", sentence);
-					// ObjectOutputStream oos = new
-					// ObjectOutputStream(clientSocket.getOutputStream());
-					oos.writeObject(Packet.buildString(messagePacket));
-					continue;
-				} else {
-					Packet otherPacket = new Packet(auth, commandList[0], "0", "0", null);
-					// ObjectOutputStream oos = new
-					// ObjectOutputStream(clientSocket.getOutputStream());
-					oos.writeObject(Packet.buildString(otherPacket));
-					continue;
-				}
+                } else if (commandList[0].equals("message")) {
+                    String sentence = "";
+                    for (int i = 0; i < commandList.length; i++) {
+                        if (sentence != null) {
+                            sentence = commandList[i];
+                        } else if (i >= 2 && sentence == null) {
+                            sentence = sentence + " " + commandList[i];
+                        }
+                    }
 
-			}
-		}
+                    String message = commandList[1] + sentence;
+                    Packet messagePacket = new Packet(auth, commandList[0], username, "0", message);
+                    // ObjectOutputStream oos = new
+                    // ObjectOutputStream(clientSocket.getOutputStream());
+                    oos.writeObject(Packet.buildString(messagePacket));
+                    continue;
 
-	}
+                } else if (commandList[0].equals("whoelsesince") || commandList[0].equals("block")
+                        || commandList[0].equals("unblock")) {
+                    System.out.println("block from the user "+ username);
+                    Packet requestPacket = new Packet(auth, commandList[0], username, "0", commandList[1]);
+                    // ObjectOutputStream oos = new
+                    // ObjectOutputStream(clientSocket.getOutputStream());
+                    oos.writeObject(Packet.buildString(requestPacket));
+                    continue;
+                } else if (commandList[0].equals("broadcast")) {
+                    String sentence = "";
+                    for (int i = 0; i < commandList.length; i++) {
+                        if (sentence != null) {
+                            sentence = commandList[i];
+                        } else if (i >= 1 && sentence == null) {
+                            sentence = sentence + " " + commandList[i];
+                        }
+                    }
+                    Packet messagePacket = new Packet(auth, commandList[0], username, "0", sentence);
+                    // ObjectOutputStream oos = new
+                    // ObjectOutputStream(clientSocket.getOutputStream());
+                    oos.writeObject(Packet.buildString(messagePacket));
+                    continue;
+                } else {
+                    Packet otherPacket = new Packet(auth, commandList[0], username, "0", null);
+                    // ObjectOutputStream oos = new
+                    // ObjectOutputStream(clientSocket.getOutputStream());
+                    oos.writeObject(Packet.buildString(otherPacket));
+                    continue;
+                }
 
-	@Override
-	public void run() {
-		System.out.println("Prepare to read the packet");
+            }
+        }
 
-		//System.out.println(receivedPacket.getMessage().toString());
+    }
 
-			
-			//Packet receivedPacket = Packet.fromString(readBuffer);
-			//System.out.println(Packet.fromString(readBuffer).getMessage().toString());
-		while (true) {
-			//System.out.println("Analyse the packet");
-			String readBuffer = null;
+    @Override
+    public void run() {
+        System.out.println("Prepare to read the packet");
+
+        //System.out.println(receivedPacket.getMessage().toString());
+        //Packet receivedPacket = Packet.fromString(readBuffer);
+        //System.out.println(Packet.fromString(readBuffer).getMessage().toString());
+        while (true) {
+            //System.out.println("Analyse the packet");
+            String readBuffer = null;
 //			try {
-			try {
-				readBuffer = ois.readObject().toString();
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+            try {
+                readBuffer = ois.readObject().toString();
+            } catch (ClassNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 //			} catch (Exception e) {
-				// TODO Auto-generated catch block
+            // TODO Auto-generated catch block
 //				e.printStackTrace();
 //				return;
-				
-//			}
-			
-			//try {
-				//receivedPacket = Packet.fromString(readBuffer);
-			//} catch (ClassNotFoundException | IOException e) {
-				// TODO Auto-generated catch block
-				//e.printStackTrace();
-				//return;
-			//}
-			if (readBuffer == null)
-				continue;
-			
-			Packet receivedPacket = Packet.fromString(readBuffer);
-			
-			System.out.println(receivedPacket.getMessage().toString());
-			//System.out.println("Get the request");
-			if (receivedPacket.getAuth().equals("true") && auth.equals("false")
-					&& receivedPacket.getRequest().equals("login")) {
-				auth = "true";
-				//System.out.println(receivedPacket.getMessage().toString() + " at if condition");
-			}
-			if (receivedPacket.getRequest().equals("timeout")) {
-				auth = "false";
-				//System.out.println(receivedPacket.getMessage().toString());
-			}
-			if (receivedPacket.getRequest().equals("logout")) {
-				auth = "false";
-				//System.out.println(receivedPacket.getMessage().toString() + " at if condition");
-			
-			}
 
-		}
-	}
+//			}
+            //try {
+            //receivedPacket = Packet.fromString(readBuffer);
+            //} catch (ClassNotFoundException | IOException e) {
+            // TODO Auto-generated catch block
+            //e.printStackTrace();
+            //return;
+            //}
+            if (readBuffer == null) {
+                continue;
+            }
+
+            Packet receivedPacket = Packet.fromString(readBuffer);
+
+            System.out.println(receivedPacket.getMessage().toString());
+            //System.out.println("Get the request");
+            if (receivedPacket.getAuth().equals("true") && auth.equals("false")
+                    && receivedPacket.getRequest().equals("login")) {
+                auth = "true";
+                //System.out.println(receivedPacket.getMessage().toString() + " at if condition");
+            }
+            if (receivedPacket.getRequest().equals("timeout")) {
+                auth = "false";
+                //System.out.println(receivedPacket.getMessage().toString());
+            }
+            if (receivedPacket.getRequest().equals("logout")) {
+                auth = "false";
+                //System.out.println(receivedPacket.getMessage().toString() + " at if condition");
+
+            }
+
+        }
+    }
 
 }

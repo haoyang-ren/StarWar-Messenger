@@ -5,9 +5,14 @@
  */
 package network;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -17,13 +22,15 @@ public class User {
 
     private String username;
     private String password;
-    private int block;
     private ArrayList<String> blackList;
-    private boolean online;
     private ArrayList<String> pending;
-    private Socket socket;
-    private LocalDateTime time;
+    private int block;
     private int port;
+    private boolean online;
+    private LocalDateTime time;
+    static private Socket socket;
+    static private ObjectInputStream ois;
+    static private ObjectOutputStream oos;
 
     public User(String username, String password, int block, ArrayList<String> blackList, boolean online, ArrayList<String> pending, Socket socket, LocalDateTime time, int port) {
         this.username = username;
@@ -108,6 +115,24 @@ public class User {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public ObjectInputStream getOis() throws IOException {  
+        this.ois = new ObjectInputStream(socket.getInputStream());
+        return ois;
+    }
+
+    public void setOis(ObjectInputStream ois) {
+        this.ois = ois;
+    }
+
+    public ObjectOutputStream getOos() throws IOException {
+        this.oos = new ObjectOutputStream(socket.getOutputStream());
+        return oos;
+    }
+
+    public void setOos(ObjectOutputStream oos) {
+        this.oos = oos;
     }
     
     

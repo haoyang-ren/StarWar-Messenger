@@ -38,7 +38,7 @@ public class Server extends Thread {
     static int currentPort;
     static float blockDuration;
     static int timeout;
-    private Socket connectionSocket;
+    static private Socket connectionSocket;
     ObjectOutputStream oos;
     ObjectInputStream ois;
 
@@ -74,21 +74,21 @@ public class Server extends Thread {
             String[] word = line.split(" ");
             //System.out.println("name is " + word[0]);
             //System.out.println("password is " + word[1]);
-            User user = new User(word[0], word[1], 0, null, false, null, null, null, 0);
+            User user = new User(word[0], word[1], 0, null, false, null, connectionSocket, null, 0);
             users.add(user);
 
         }
         reader.close();
-        
+
         // System.out.println("Program has arrived here");
         while (true) {
             // Get the connection socket and address
             Socket connectionSocket = serverSocket.accept();
             SocketAddress connectionAddress = connectionSocket.getRemoteSocketAddress();
-            OutputStream os =  connectionSocket.getOutputStream();
+            OutputStream os = connectionSocket.getOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(os);
-            
-            InputStream is =  connectionSocket.getInputStream();
+
+            InputStream is = connectionSocket.getInputStream();
             ObjectInputStream ois = new ObjectInputStream(is);
 
             // Use connection socket to send current port number
@@ -142,9 +142,9 @@ public class Server extends Thread {
                 if (user.getPassword().equals(password)) {
                     user.setOnline(true);
                     user.setSocket(connectionSocket);
-                    if(user.getSocket() == null){
+                    if (user.getSocket() == null) {
                         System.out.println("user don't have socket at login!");
-                    }else{
+                    } else {
                         System.out.println("user already have socket at login");
                     }
                     //System.out.println("user socket is " + user.getSocket().getInetAddress().toString() + user.getSocket().getLocalPort());
@@ -183,19 +183,20 @@ public class Server extends Thread {
                     //oos = new ObjectOutputStream(user.getSocket().getOutputStream());
                     //System.out.println("!!!user socket is " + user.getSocket().toString());
                     System.out.println("In the third condition");
-                    if(user.getSocket() == null){
+                    if (user.getSocket() == null) {
                         System.out.println("user don't have socket!");
-                    }else{
+                    } else {
                         System.out.println("user already have socket!");
                     }
                     //oos = new ObjectOutputStream(user.getSocket().getOutputStream());
-                    
+                   
+                    //ObjectOutputStream oos = user.getOos();
+                    //connectionSocket.setKeepAlive(true);
                     //oos.writeObject(Packet.buildString(messeagePacket));
-                    //oos.flush();
-                    //oos.close();
-                    //ObjectOutputStream newoos = new ObjectOutputStream(user.getSocket().getOutputStream());
-                    oos.writeObject(Packet.buildString(messeagePacket));
-                    
+                    Thread sendThread = new ClientHandler(user, messeagePacket);
+                    sendThread.start();
+                    //oos.writeObject(Packet.buildString(messeagePacket));
+                    //connectionSocket.setKeepAlive(true);
                     result.add("true");
                     result.add("online");
                     System.out.println("In the forth condition");
@@ -274,6 +275,9 @@ public class Server extends Thread {
     }
 
     public ArrayList<String> block(String source, String destination) {
+        System.out.println("the source is " + source);
+        System.out.println("the destination is " + destination);
+
         ArrayList<String> result = new ArrayList<String>();
         boolean find = false;
         if (source.equals(destination)) {
@@ -285,19 +289,26 @@ public class Server extends Thread {
         for (User user : users) {
             if (user.getUsername().equals(destination)) {
                 find = true;
-                break;
             }
         }
+
         if (find == true) {
+            System.out.println("The find boolean is true");
             for (User user : users) {
+
                 if (user.getUsername().equals(source)) {
+                    System.out.println("find the user");
                     user.getBlackList().add(destination);
                     result.add("true");
                     result.add("Suceessfully block " + destination);
+                    System.out.println("result[0] is " + result.get(0));
+                    System.out.println("result[1] is " + result.get(1));
                     return result;
                 }
+
             }
         } else {
+            System.out.println("The find boolean is false");
             result.add("false");
             result.add("Invalid username " + destination);
             return result;
@@ -440,8 +451,8 @@ public class Server extends Thread {
                         strArray[i] = fl.get(i);
                     }
                     String result = Arrays.toString(strArray);
-                    result = result.substring(1, result.length()-1);
-                    System.out.println("whoelse is "+ result);
+                    result = result.substring(1, result.length() - 1);
+                    System.out.println("whoelse is " + result);
                     Packet whoelsePacket = new Packet(auth, "whoelse", "0", "0", result);
                     //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(whoelsePacket));
@@ -457,8 +468,8 @@ public class Server extends Thread {
                         strArray[i] = fl.get(i);
                     }
                     String result = Arrays.toString(strArray);
-                    result = result.substring(1, result.length()-1);
-                    System.out.println("whoelsesince is "+ result);
+                    result = result.substring(1, result.length() - 1);
+                    System.out.println("whoelsesince is " + result);
                     Packet whoelsesincePacket = new Packet(auth, "whoelsesince", "0", "0", result);
                     //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(whoelsesincePacket));
@@ -470,6 +481,7 @@ public class Server extends Thread {
 
                     ArrayList<String> fl = block(receivedPacket.getUsername().toString(),
                             receivedPacket.getMessage().toString());
+
                     if (fl.get(0).equals("true")) {
 
                         Packet blockPacket = new Packet(auth, "block", "0", "0", fl.get(1));
