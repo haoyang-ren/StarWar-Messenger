@@ -11,6 +11,9 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,8 +58,6 @@ public class Client extends Thread {
         while (true) {
             Thread.sleep(50);
             
-            
-            
             if (auth.equals("false")) {
 
                 System.out.println("Please Enter your Username: ");
@@ -90,16 +91,22 @@ public class Client extends Thread {
                     continue;
 
                 } else if (commandList[0].equals("message")) {
-                    String sentence = "";
-                    for (int i = 0; i < commandList.length; i++) {
+                    //String sentence = "";
+                    /*for (int i = 0; i < commandList.length; i++) {
                         if (sentence != null) {
                             sentence = commandList[i];
                         } else if (i >= 2 && sentence == null) {
                             sentence = sentence + " " + commandList[i];
                         }
-                    }
-
-                    String message = commandList[1] + sentence;
+                    }*/
+                    List<String> strList = new ArrayList<String>(Arrays.asList(commandList));
+                    strList.remove(0);
+                    
+                    String message = String.join(" ", strList);
+                    
+                    System.out.println("sender username is "+ username);
+                    //String message = commandList[1] + " " + sentence;
+                    System.out.println("the message is "+message);
                     Packet messagePacket = new Packet(auth, commandList[0], username, "0", message);
                     // ObjectOutputStream oos = new
                     // ObjectOutputStream(clientSocket.getOutputStream());

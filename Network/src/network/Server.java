@@ -174,50 +174,52 @@ public class Server extends Thread {
             return result;
         } else {
             for (User user : users) {
-                if (user.getUsername().equals(destination) && user.getBlackList().contains(source)) {
+                if(user.getUsername().equals(destination)){
+                /*if (user.getUsername().equals(destination) && user.getBlackList().contains(source)) {
                     result.add("false");
                     result.add("You have been blocked by" + destination);
                     System.out.println("In the second condition");
                     return result;
-                }
-                if (user.isOnline() == true) {
-                    Packet messeagePacket = new Packet(auth, "message", "0", "0", content);
-                    //oos = new ObjectOutputStream(user.getSocket().getOutputStream());
-                    //System.out.println("!!!user socket is " + user.getSocket().toString());
-                    System.out.println("In the third condition");
-                    if (user.getSocket() == null) {
-                        System.out.println("user don't have socket!");
-                    } else {
-                        System.out.println("user already have socket!");
-                    }
-                    System.out.println("user name is " + user.getUsername());
-                    oos = user.getOos();
-                   
-                    //ObjectOutputStream oos = user.getOos();
-                    //connectionSocket.setKeepAlive(true);
-                    oos.writeObject(Packet.buildString(messeagePacket));
-                    //Thread sendThread = new ClientHandler(user, messeagePacket);
-                    //sendThread.start();
-                    if(oos == null){
-                        System.out.println("Nothing in oos!");
-                    }else{
-                        System.out.println("Something inside oos!");
-                    }
-                    oos.writeObject(Packet.buildString(messeagePacket));
-                    //connectionSocket.setKeepAlive(true);
-                    result.add("true");
-                    result.add("online");
-                    System.out.println("In the forth condition");
-                    return result;
-                } else {
-                    String pending = "Pending :" + source + " " + "content";
-                    user.getPending().add(pending);
-                    result.add("true");
-                    result.add("offline");
-                    System.out.println("In the fifth condition");
-                    return result;
-                }
+                }*/
+                    if (user.isOnline() == true) {
+                        Packet messeagePacket = new Packet(auth, "message", "0", "0", source + ": " + content);
+                        //oos = new ObjectOutputStream(user.getSocket().getOutputStream());
+                        //System.out.println("!!!user socket is " + user.getSocket().toString());
+                        System.out.println("In the third condition");
+                        if (user.getSocket() == null) {
+                            System.out.println("user don't have socket!");
+                        } else {
+                            System.out.println("user already have socket!");
+                        }
+                        System.out.println("receiver user name is " + user.getUsername());
+                        oos = user.getOos();
 
+                        //ObjectOutputStream oos = user.getOos();
+                        //connectionSocket.setKeepAlive(true);
+                        //oos.writeObject(Packet.buildString(messeagePacket));
+                        //Thread sendThread = new ClientHandler(user, messeagePacket);
+                        //sendThread.start();
+                        if(oos == null){
+                            System.out.println("Nothing in oos!");
+                        }else{
+                            System.out.println("Something inside oos!");
+                        }
+                        oos.writeObject(Packet.buildString(messeagePacket));
+                        //connectionSocket.setKeepAlive(true);
+                        result.add("true");
+                        result.add("online");
+                        System.out.println("In the forth condition");
+                        return result;
+                    } else {
+                        String pending = "Pending :" + source + " " + "content";
+                        user.getPending().add(pending);
+                        result.add("true");
+                        result.add("offline");
+                        System.out.println("In the fifth condition");
+                        return result;
+                    }
+
+                }
             }
 
         }
@@ -376,12 +378,13 @@ public class Server extends Thread {
             try {
                 //ObjectInputStream ois = new ObjectInputStream(connectionSocket.getInputStream());
                 Packet receivedPacket = Packet.fromString((String) this.ois.readObject());
-                System.out.println("Analyse request!");
+                System.out.println("Analyse request!!!!!!!!!!!!!!!!!!!!");
                 System.out.println("auth is " + receivedPacket.getAuth());
                 System.out.println("request is " + receivedPacket.getRequest());
                 System.out.println("username is " + receivedPacket.getUsername());
                 System.out.println("password is " + receivedPacket.getPassword());
                 System.out.println("message is " + receivedPacket.getMessage());
+                System.out.println("End of Analyse request!!!!!!!!!!!!!!!!!!!!");
                 // Try to login the system
                 if (auth.equals("false") == true && receivedPacket.getRequest().toString().equals("login")) {
                     ArrayList<String> fl = login(receivedPacket.getUsername().toString(),
@@ -430,11 +433,17 @@ public class Server extends Thread {
                     continue;
                 }
                 if (auth.equals("true") && receivedPacket.getRequest().toString().equals("message") == true) {
+                    System.out.println("message is "+ receivedPacket.getMessage());
                     String strArray[] = receivedPacket.getMessage().toString().split(" ");
-                    String peername = strArray[0];
-                    String information = strArray[0];
-                    ArrayList<String> fl = sendMessage(receivedPacket.getUsername().toString(), peername,
-                            information);
+                    List<String> strList = new ArrayList<String>(Arrays.asList(strArray));
+                    String receiver = strList.get(0);
+                    strList.remove(0);
+                    String content = String.join(" ", strList);
+                    
+                    System.out.println("receiver name is "+receiver);
+                    System.out.println("content is "+ content);
+                    ArrayList<String> fl = sendMessage(receivedPacket.getUsername().toString(), receiver,
+                            content);
                     if (fl.get(0).equals("false")) {
                         Packet messagePacket = new Packet(auth, "messageError", "0", "0", fl.get(1));
                         //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
