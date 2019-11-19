@@ -175,23 +175,25 @@ public class Server extends Thread {
         } else {
             for (User user : users) {
                 if (user.getUsername().equals(destination)) {
-                    /*if (user.getUsername().equals(destination) && user.getBlackList().contains(source)) {
-                    result.add("false");
-                    result.add("You have been blocked by" + destination);
-                    System.out.println("In the second condition");
-                    return result;
-                }*/
+                    if (user.getBlackList() != null) {
+                        if (user.getBlackList().contains(source)) {
+                            result.add("false");
+                            result.add("You have been blocked by " + destination);
+                            System.out.println("In the second condition");
+                            return result;
+                        }
+                    }
                     if (user.isOnline() == true) {
                         Packet messeagePacket = new Packet(auth, "message", "0", "0", source + ": " + content);
                         //oos = new ObjectOutputStream(user.getSocket().getOutputStream());
                         //System.out.println("!!!user socket is " + user.getSocket().toString());
-                        System.out.println("In the third condition");
+                        /*System.out.println("In the third condition");
                         if (user.getSocket() == null) {
                             System.out.println("user don't have socket!");
                         } else {
                             System.out.println("user already have socket!");
                         }
-                        System.out.println("receiver user name is " + user.getUsername());
+                        System.out.println("receiver user name is " + user.getUsername());*/
                         oos = user.getOos();
 
                         //ObjectOutputStream oos = user.getOos();
@@ -212,7 +214,9 @@ public class Server extends Thread {
                         return result;
                     } else {
                         String pending = "Pending :" + source + " " + "content";
-                        user.getPending().add(pending);
+                        ArrayList<String> pendingList = user.getPending();
+                        pendingList.add(pending);
+                        user.setPending(pendingList);
                         result.add("true");
                         result.add("offline");
                         System.out.println("In the fifth condition");
@@ -231,8 +235,18 @@ public class Server extends Thread {
 
     public ArrayList<String> broadcast(String source, String content) throws IOException {
         ArrayList<String> result = new ArrayList<String>();
+        System.out.println("source name is " + source);
         String auth = "True";
         for (User user : users) {
+            if (user.getBlackList() != null) {
+                if (user.getBlackList().contains(source)) {
+                    System.out.println("use who block source is " + user.getUsername());
+                    result.add("false");
+                    result.add("Your message can not be broadcast to somme users");
+                    System.out.println("In the second condition");
+                    return result;
+                }
+            }
             if (user.isOnline() == true && user.getUsername().equals(source) == false) {
                 /*if (user.getBlackList().contains(source)) {
                     result.add("false");
@@ -423,8 +437,7 @@ public class Server extends Thread {
                                 String duplicateLogin = receivedPacket.getUsername().toString() + " has logged in";
                                 Packet duplicateLoginPacket = new Packet(auth, "notification", "0", "0",
                                         duplicateLogin);
-                                //ObjectOutputStream newoos = new ObjectOutputStream(userSocket.getOutputStream());
-                                //newoos.writeObject(Packet.buildString(duplicateLoginPacket));
+                                oos = user.getOos();
                                 oos.writeObject(Packet.buildString(duplicateLoginPacket));
                             }
                         }
@@ -454,8 +467,8 @@ public class Server extends Thread {
                 }
                 if (auth.equals("true") && receivedPacket.getRequest().toString().equals("broadcast") == true) {
 
-                    ArrayList<String> fl = broadcast(receivedPacket.getUsername().toString(),
-                            receivedPacket.getMessage().toString());
+                    ArrayList<String> fl = broadcast(receivedPacket.getUsername(), receivedPacket.getUsername() + ": "
+                            + receivedPacket.getMessage());
                     if (fl.get(0).equals("false")) {
                         Packet errorPacket = new Packet(auth, "broadcastError", "0", "0", fl.get(1));
                         //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
