@@ -169,7 +169,7 @@ public class Server extends Thread {
         ArrayList<String> result = new ArrayList<String>();
         if (source.equals(destination) == true) {
             result.add("false");
-            result.add("Can not send message to yourself!");
+            result.add("Error. Cannot message self");
             System.out.println("In the first condition");
             return result;
         } else {
@@ -178,7 +178,7 @@ public class Server extends Thread {
                     if (user.getBlackList() != null) {
                         if (user.getBlackList().contains(source)) {
                             result.add("false");
-                            result.add("You have been blocked by " + destination);
+                            result.add("Your message could not be delivered as the recipient has blocked you");
                             System.out.println("In the second condition");
                             return result;
                         }
@@ -293,7 +293,7 @@ public class Server extends Thread {
             return result;
         } else {
             result.add("false");
-            result.add("Your message can not be broadcast to somme users");
+            result.add("Your message could not be delivered to some recipients");
             System.out.println("In the second condition");
             System.out.println("get return---------");
         }
@@ -338,7 +338,7 @@ public class Server extends Thread {
         boolean find = false;
         if (source.equals(destination)) {
             result.add("false");
-            result.add("You can not block yourself!");
+            result.add("Error. Cannot block self");
             return result;
         }
 
@@ -358,7 +358,7 @@ public class Server extends Thread {
                     newBlackList.add(destination);
                     user.setBlackList(newBlackList);
                     result.add("true");
-                    result.add("Suceessfully block " + destination);
+                    result.add(destination + " is blocked");
                     System.out.println(user.getUsername() + "=============has the BlackList is " + user.getBlackList().get(0));
                     System.out.println("result[0] is " + result.get(0));
                     System.out.println("result[1] is " + result.get(1));
@@ -396,14 +396,14 @@ public class Server extends Thread {
                 if (user.getUsername().equals(source)) {
                     if (user.getBlackList().contains(destination) == false) {
                         result.add("false");
-                        result.add(destination + " is not in your blacklist!");
+                        result.add("Error. "+destination + " was not blocked");
                         return result;
                     }
                     ArrayList<String> newBlackList = new ArrayList<String>();
                     newBlackList.remove(destination);
                     user.setBlackList(newBlackList);
                     result.add("true");
-                    result.add("Successfully remove " + destination + " from your blacklist!");
+                    result.add(destination + " is unblocked");
                     return result;
                 }
             }
@@ -494,7 +494,12 @@ public class Server extends Thread {
                             content);
                     if (fl.get(0).equals("false")) {
                         Packet messagePacket = new Packet(auth, "messageError", "0", "0", fl.get(1));
-                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        for (User user : users) {
+                            if (user.getUsername().equals(receivedPacket.getUsername())) {
+                                oos = user.getOos();
+                                break;
+                            }
+                        }
                         oos.writeObject(Packet.buildString(messagePacket));
                     }
                     //connectionSocket.setSoTimeout(timeout);
@@ -567,6 +572,12 @@ public class Server extends Thread {
                         oos.writeObject(Packet.buildString(blockPacket));
                     } else {
                         Packet blockErrorPacket = new Packet(auth, "blockError", "0", "0", fl.get(1));
+                        for (User user : users) {
+                            if (user.getUsername().equals(receivedPacket.getUsername())) {
+                                oos = user.getOos();
+                                break;
+                            }
+                        }
                         oos.writeObject(Packet.buildString(blockErrorPacket));
                     }
                     continue;
@@ -587,7 +598,12 @@ public class Server extends Thread {
                         oos.writeObject(Packet.buildString(blockPacket));
                     } else {
                         Packet unblockErrorPacket = new Packet(auth, "unblockError", "0", "0", fl.get(1));
-                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        for (User user : users) {
+                            if (user.getUsername().equals(receivedPacket.getUsername())) {
+                                oos = user.getOos();
+                                break;
+                            }
+                        }
                         oos.writeObject(Packet.buildString(unblockErrorPacket));
 
                         //connectionSocket.setSoTimeout(timeout);
