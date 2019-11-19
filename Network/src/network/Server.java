@@ -235,31 +235,69 @@ public class Server extends Thread {
 
     public ArrayList<String> broadcast(String source, String content) throws IOException {
         ArrayList<String> result = new ArrayList<String>();
-        //System.out.println("source name is " + source);
+        //System.out.println("source name is " + soue);
+        /*System.out.println("Get in the broadcast-----------");
         String auth = "True";
+        Boolean skip = false;
         for (User user : users) {
+            System.out.println("Get in the for loop-----------");
             if (user.getBlackList() != null) {
+                System.out.println("compare the users blacklist---------");
+                skip = true;
                 if (user.getBlackList().contains(source)) {
                     //System.out.println("use who block source is " + user.getUsername());
+                    System.out.println("check blacklist---------");
                     result.add("false");
                     result.add("Your message can not be broadcast to somme users");
                     System.out.println("In the second condition");
+                    System.out.println("get return---------");
                     return result;
                 }
-            } else {
-                for (User peer : users) {
-                    if (peer.isOnline() == true && peer.getUsername().equals(source) == false) {
-                        Packet broadcastPacket = new Packet(auth, "broadcast", "0", "0", content);
-                        oos = peer.getOos();
-                        oos.writeObject(Packet.buildString(broadcastPacket));
-                    }
-                }
-                result.add("true");
-                result.add("Your message has been broadcast successfully!");
-                System.out.println("In the second condition");
-                return result;
+
             }
         }
+        if (skip == false) {
+            for (User peer : users) {
+                if (peer.isOnline() == true && peer.getUsername().equals(source) == false) {
+                    Packet broadcastPacket = new Packet(auth, "broadcast", "0", "0", content);
+                    oos = peer.getOos();
+                    oos.writeObject(Packet.buildString(broadcastPacket));
+                }
+            }
+            result.add("true");
+            result.add("Your message has been broadcast successfully!");
+            System.out.println("In the second condition");
+            return result;
+        }
+        return result;*/
+        boolean skip = false;
+        for (User user : users) {
+            if (user.getUsername().equals(source) == false && user.isOnline() == true) {
+                if (user.getBlackList() == null) {
+                    Packet broadcastPacket = new Packet("True", "broadcast", "0", "0", content);
+                    oos = user.getOos();
+                    oos.writeObject(Packet.buildString(broadcastPacket));
+                }
+                if (user.getBlackList() != null) {
+                    if (user.getUsername().equals(source) == false) {
+                        skip = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (skip == false) {
+            result.add("true");
+            result.add("Your message has been broadcast successfully!");
+            System.out.println("In the second condition");
+            return result;
+        } else {
+            result.add("false");
+            result.add("Your message can not be broadcast to somme users");
+            System.out.println("In the second condition");
+            System.out.println("get return---------");
+        }
+        System.out.println("get out of the loop---------");
         return result;
     }
 
@@ -321,6 +359,7 @@ public class Server extends Thread {
                     user.setBlackList(newBlackList);
                     result.add("true");
                     result.add("Suceessfully block " + destination);
+                    System.out.println(user.getUsername() + "=============has the BlackList is " + user.getBlackList().get(0));
                     System.out.println("result[0] is " + result.get(0));
                     System.out.println("result[1] is " + result.get(1));
                     return result;
@@ -468,6 +507,12 @@ public class Server extends Thread {
                     if (fl.get(0).equals("false")) {
                         Packet errorPacket = new Packet(auth, "broadcastError", "0", "0", fl.get(1));
                         //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                        for (User user : users) {
+                            if (user.getUsername().equals(receivedPacket.getUsername())) {
+                                oos = user.getOos();
+                                break;
+                            }
+                        }
                         oos.writeObject(Packet.buildString(errorPacket));
                     }
                     //connectionSocket.setSoTimeout(timeout);
@@ -511,31 +556,18 @@ public class Server extends Thread {
 
                     ArrayList<String> fl = block(receivedPacket.getUsername().toString(),
                             receivedPacket.getMessage().toString());
-                    System.out.println("!!! First outpoutstream username is " + receivedPacket.getUsername());
                     if (fl.get(0).equals("true")) {
-                        System.out.println("!!!Secnd outpoutstream username is " + receivedPacket.getUsername());
                         Packet blockPacket = new Packet(auth, "block", "0", "0", fl.get(1));
-                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                        System.out.println("!!!Third outpoutstream username is " + receivedPacket.getUsername());
-                        for(User user : users){
-                            System.out.println("Inside the for loop");
-                            if(user.getUsername().equals(receivedPacket.getUsername())){
-                                System.out.println("!!!Forth outpoutstream username is " + receivedPacket.getUsername());
+                        for (User user : users) {
+                            if (user.getUsername().equals(receivedPacket.getUsername())) {
                                 oos = user.getOos();
-                                System.out.println("!!!Fifth outpoutstream username is " + user.getUsername());
                                 break;
                             }
                         }
-                        System.out.println("!!!Six outpoutstream username is " + receivedPacket.getUsername());
                         oos.writeObject(Packet.buildString(blockPacket));
-
-                        //connectionSocket.setSoTimeout(timeout);
                     } else {
                         Packet blockErrorPacket = new Packet(auth, "blockError", "0", "0", fl.get(1));
-                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
                         oos.writeObject(Packet.buildString(blockErrorPacket));
-
-                        //connectionSocket.setSoTimeout(timeout);
                     }
                     continue;
                 }
@@ -546,16 +578,13 @@ public class Server extends Thread {
                     if (fl.get(0).equals("true")) {
 
                         Packet blockPacket = new Packet(auth, "unblock", "0", "0", fl.get(1));
-                        //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                        for(User user : users){
-                            if(user.getUsername() == receivedPacket.getUsername()){
+                        for (User user : users) {
+                            if (user.getUsername().equals(receivedPacket.getUsername())) {
                                 oos = user.getOos();
                                 break;
                             }
                         }
                         oos.writeObject(Packet.buildString(blockPacket));
-
-                        //connectionSocket.setSoTimeout(timeout);
                     } else {
                         Packet unblockErrorPacket = new Packet(auth, "unblockError", "0", "0", fl.get(1));
                         //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
@@ -609,16 +638,20 @@ public class Server extends Thread {
                     oos.writeObject(Packet.buildString(errorPacket));
                     connectionSocket.close();*/
                 System.exit(1);
+
             } catch (ClassNotFoundException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(Server.class
+                        .getName()).log(Level.SEVERE, null, ex);
                 /*String exceptionInfo = "Your packet can not be accepted by server!";
                     Packet errorPacket = new Packet(auth, "timeout", "0", "0", exceptionInfo);
                     ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(errorPacket));
                     connectionSocket.close();*/
                 System.exit(1);
+
             } catch (InterruptedException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(Server.class
+                        .getName()).log(Level.SEVERE, null, ex);
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
