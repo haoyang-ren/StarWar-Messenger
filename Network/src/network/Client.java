@@ -85,8 +85,6 @@ public class Client extends Thread {
                 }
                 if (commandList[0].equals("logout") || commandList[0].equals("whoelse")) {
                     Packet requestPacket = new Packet(auth, commandList[0], username, null, null);
-                    // ObjectOutputStream oos = new
-                    // ObjectOutputStream(clientSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(requestPacket));
                     continue;
 
@@ -110,17 +108,12 @@ public class Client extends Thread {
                     
                 } else if (commandList[0].equals("whoelsesince") || commandList[0].equals("block")
                         || commandList[0].equals("unblock")) {
-                    //System.out.println("block from the user "+ "0");
                     Packet requestPacket = new Packet(auth, commandList[0], username, "0", commandList[1]);
-                    // ObjectOutputStream oos = new
-                    // ObjectOutputStream(clientSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(requestPacket));
                     continue;
                 
                 } else {
                     Packet otherPacket = new Packet(auth, commandList[0], username, "0", null);
-                    // ObjectOutputStream oos = new
-                    // ObjectOutputStream(clientSocket.getOutputStream());
                     oos.writeObject(Packet.buildString(otherPacket));
                     continue;
                 }
