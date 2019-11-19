@@ -235,55 +235,23 @@ public class Server extends Thread {
 
     public ArrayList<String> broadcast(String source, String content) throws IOException {
         ArrayList<String> result = new ArrayList<String>();
-        //System.out.println("source name is " + soue);
-        /*System.out.println("Get in the broadcast-----------");
-        String auth = "True";
-        Boolean skip = false;
-        for (User user : users) {
-            System.out.println("Get in the for loop-----------");
-            if (user.getBlackList() != null) {
-                System.out.println("compare the users blacklist---------");
-                skip = true;
-                if (user.getBlackList().contains(source)) {
-                    //System.out.println("use who block source is " + user.getUsername());
-                    System.out.println("check blacklist---------");
-                    result.add("false");
-                    result.add("Your message can not be broadcast to somme users");
-                    System.out.println("In the second condition");
-                    System.out.println("get return---------");
-                    return result;
-                }
 
-            }
-        }
-        if (skip == false) {
-            for (User peer : users) {
-                if (peer.isOnline() == true && peer.getUsername().equals(source) == false) {
-                    Packet broadcastPacket = new Packet(auth, "broadcast", "0", "0", content);
-                    oos = peer.getOos();
-                    oos.writeObject(Packet.buildString(broadcastPacket));
-                }
-            }
-            result.add("true");
-            result.add("Your message has been broadcast successfully!");
-            System.out.println("In the second condition");
-            return result;
-        }
-        return result;*/
         boolean skip = false;
         for (User user : users) {
             if (user.getUsername().equals(source) == false && user.isOnline() == true) {
-                if (user.getBlackList() == null) {
-                    Packet broadcastPacket = new Packet("True", "broadcast", "0", "0", content);
-                    oos = user.getOos();
-                    oos.writeObject(Packet.buildString(broadcastPacket));
-                }
+                //if (user.getBlackList() == null) {
+                    
+                //}
                 if (user.getBlackList() != null) {
                     if (user.getUsername().equals(source) == false) {
                         skip = true;
                         break;
                     }
                 }
+                Packet broadcastPacket = new Packet("True", "broadcast", "0", "0", content);
+                    skip = false;
+                    oos = user.getOos();
+                    oos.writeObject(Packet.buildString(broadcastPacket));
             }
         }
         if (skip == false) {
@@ -388,7 +356,6 @@ public class Server extends Thread {
         for (User user : users) {
             if (user.getUsername().equals(destination)) {
                 find = true;
-                break;
             }
         }
         if (find == true) {
@@ -396,10 +363,10 @@ public class Server extends Thread {
                 if (user.getUsername().equals(source)) {
                     if (user.getBlackList().contains(destination) == false) {
                         result.add("false");
-                        result.add("Error. "+destination + " was not blocked");
+                        result.add("Error. " + destination + " was not blocked");
                         return result;
                     }
-                    ArrayList<String> newBlackList = new ArrayList<String>();
+                    ArrayList<String> newBlackList = user.getBlackList();
                     newBlackList.remove(destination);
                     user.setBlackList(newBlackList);
                     result.add("true");
