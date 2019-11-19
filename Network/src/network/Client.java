@@ -104,9 +104,9 @@ public class Client extends Thread {
                     
                     String message = String.join(" ", strList);
                     
-                    System.out.println("sender username is "+ username);
+                    //System.out.println("sender username is "+ username);
                     //String message = commandList[1] + " " + sentence;
-                    System.out.println("the message is "+message);
+                    //System.out.println("the message is "+message);
                     Packet messagePacket = new Packet(auth, commandList[0], username, "0", message);
                     // ObjectOutputStream oos = new
                     // ObjectOutputStream(clientSocket.getOutputStream());
@@ -122,18 +122,14 @@ public class Client extends Thread {
                     oos.writeObject(Packet.buildString(requestPacket));
                     continue;
                 } else if (commandList[0].equals("broadcast")) {
-                    String sentence = "";
-                    for (int i = 0; i < commandList.length; i++) {
-                        if (sentence != null) {
-                            sentence = commandList[i];
-                        } else if (i >= 1 && sentence == null) {
-                            sentence = sentence + " " + commandList[i];
-                        }
-                    }
-                    Packet messagePacket = new Packet(auth, commandList[0], username, "0", sentence);
+                    List<String> strList = new ArrayList<String>(Arrays.asList(commandList));
+                    strList.remove(0);
+                    
+                    String broadcast = String.join(" ", strList);
+                    Packet broadcastPacket = new Packet(auth, commandList[0], username, "0", broadcast);
                     // ObjectOutputStream oos = new
                     // ObjectOutputStream(clientSocket.getOutputStream());
-                    oos.writeObject(Packet.buildString(messagePacket));
+                    oos.writeObject(Packet.buildString(broadcastPacket));
                     continue;
                 } else {
                     Packet otherPacket = new Packet(auth, commandList[0], username, "0", null);

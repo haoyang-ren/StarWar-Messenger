@@ -174,8 +174,8 @@ public class Server extends Thread {
             return result;
         } else {
             for (User user : users) {
-                if(user.getUsername().equals(destination)){
-                /*if (user.getUsername().equals(destination) && user.getBlackList().contains(source)) {
+                if (user.getUsername().equals(destination)) {
+                    /*if (user.getUsername().equals(destination) && user.getBlackList().contains(source)) {
                     result.add("false");
                     result.add("You have been blocked by" + destination);
                     System.out.println("In the second condition");
@@ -199,9 +199,9 @@ public class Server extends Thread {
                         //oos.writeObject(Packet.buildString(messeagePacket));
                         //Thread sendThread = new ClientHandler(user, messeagePacket);
                         //sendThread.start();
-                        if(oos == null){
+                        if (oos == null) {
                             System.out.println("Nothing in oos!");
-                        }else{
+                        } else {
                             System.out.println("Something inside oos!");
                         }
                         oos.writeObject(Packet.buildString(messeagePacket));
@@ -234,24 +234,24 @@ public class Server extends Thread {
         String auth = "True";
         for (User user : users) {
             if (user.isOnline() == true && user.getUsername().equals(source) == false) {
-                if (user.getBlackList().contains(source)) {
+                /*if (user.getBlackList().contains(source)) {
                     result.add("false");
                     result.add("Your message can not be broadcast to somme users");
                     System.out.println("In the first condition");
                     return result;
-                } else {
-                    Packet broadcastPacket = new Packet(auth, "broadcast", "0", "0", content);
-                    ObjectOutputStream oos = new ObjectOutputStream(user.getSocket().getOutputStream());
-                    oos.writeObject(Packet.buildString(broadcastPacket));
+                } else {*/
+                Packet broadcastPacket = new Packet(auth, "broadcast", "0", "0", content);
+                //ObjectOutputStream oos = new ObjectOutputStream(user.getSocket().getOutputStream());
+                //oos.writeObject(Packet.buildString(broadcastPacket));
+                oos = user.getOos();
+                oos.writeObject(Packet.buildString(broadcastPacket));
 
-                    result.add("true");
-                    result.add("Your message has been broadcast successfully!");
-                    System.out.println("In the second condition");
-                    return result;
-                }
+                //}
             }
         }
-        System.out.println("In the last condition");
+        result.add("true");
+        result.add("Your message has been broadcast successfully!");
+        System.out.println("In the second condition");
         return result;
     }
 
@@ -433,15 +433,15 @@ public class Server extends Thread {
                     continue;
                 }
                 if (auth.equals("true") && receivedPacket.getRequest().toString().equals("message") == true) {
-                    System.out.println("message is "+ receivedPacket.getMessage());
+                    //System.out.println("message is "+ receivedPacket.getMessage());
                     String strArray[] = receivedPacket.getMessage().toString().split(" ");
                     List<String> strList = new ArrayList<String>(Arrays.asList(strArray));
                     String receiver = strList.get(0);
                     strList.remove(0);
                     String content = String.join(" ", strList);
-                    
-                    System.out.println("receiver name is "+receiver);
-                    System.out.println("content is "+ content);
+
+                    //System.out.println("receiver name is "+receiver);
+                    //System.out.println("content is "+ content);
                     ArrayList<String> fl = sendMessage(receivedPacket.getUsername().toString(), receiver,
                             content);
                     if (fl.get(0).equals("false")) {
