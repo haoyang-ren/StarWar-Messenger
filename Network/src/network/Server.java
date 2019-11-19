@@ -31,14 +31,14 @@ public class Server extends Thread {
     /**
      * @param args the command line arguments
      */
-    static ServerSocket serverSocket;
+    ServerSocket serverSocket;
     static ArrayList<User> users = new ArrayList<User>();
     static String serverName;
     static int serverPort;
     static int currentPort;
     static float blockDuration;
     static int timeout;
-    static private Socket connectionSocket;
+    private Socket connectionSocket;
     ObjectOutputStream oos;
     ObjectInputStream ois;
 
@@ -61,7 +61,7 @@ public class Server extends Thread {
         blockDuration = Float.parseFloat(args[1]);
         timeout = Integer.parseInt(args[2]);
         // Create the new server socket
-        serverSocket = new ServerSocket(serverPort);
+        ServerSocket serverSocket = new ServerSocket(serverPort);
         serverName = "localhost";
         // Create all the users and add them to the users
         String root = System.getProperty("user.dir");
@@ -74,7 +74,7 @@ public class Server extends Thread {
             String[] word = line.split(" ");
             //System.out.println("name is " + word[0]);
             //System.out.println("password is " + word[1]);
-            User user = new User(word[0], word[1], 0, null, false, null, connectionSocket, null, 0);
+            User user = new User(word[0], word[1], 0, null, false, null, null, null, 0);
             users.add(user);
 
         }
@@ -108,7 +108,7 @@ public class Server extends Thread {
 
     }
 
-    public ArrayList<String> login(String username, String password, Socket connectionSocket, int currentPort) {
+    public ArrayList<String> login(String username, String password, Socket connectionSocket, int currentPort) throws IOException {
         System.out.println("pass in user name is " + username + " over");
         System.out.println("pass in user name is " + password + " over");
         ArrayList<String> result = new ArrayList<String>();
@@ -142,6 +142,8 @@ public class Server extends Thread {
                 if (user.getPassword().equals(password)) {
                     user.setOnline(true);
                     user.setSocket(connectionSocket);
+                    user.setOis(ois);
+                    user.setOos(oos);
                     if (user.getSocket() == null) {
                         System.out.println("user don't have socket at login!");
                     } else {
@@ -188,14 +190,20 @@ public class Server extends Thread {
                     } else {
                         System.out.println("user already have socket!");
                     }
-                    //oos = new ObjectOutputStream(user.getSocket().getOutputStream());
+                    System.out.println("user name is " + user.getUsername());
+                    oos = user.getOos();
                    
                     //ObjectOutputStream oos = user.getOos();
                     //connectionSocket.setKeepAlive(true);
-                    //oos.writeObject(Packet.buildString(messeagePacket));
-                    Thread sendThread = new ClientHandler(user, messeagePacket);
-                    sendThread.start();
-                    //oos.writeObject(Packet.buildString(messeagePacket));
+                    oos.writeObject(Packet.buildString(messeagePacket));
+                    //Thread sendThread = new ClientHandler(user, messeagePacket);
+                    //sendThread.start();
+                    if(oos == null){
+                        System.out.println("Nothing in oos!");
+                    }else{
+                        System.out.println("Something inside oos!");
+                    }
+                    oos.writeObject(Packet.buildString(messeagePacket));
                     //connectionSocket.setKeepAlive(true);
                     result.add("true");
                     result.add("online");
@@ -298,7 +306,9 @@ public class Server extends Thread {
 
                 if (user.getUsername().equals(source)) {
                     System.out.println("find the user");
-                    user.getBlackList().add(destination);
+                    ArrayList<String> newBlackList = new ArrayList<String>();
+                    newBlackList.add(destination);
+                    user.setBlackList(newBlackList);
                     result.add("true");
                     result.add("Suceessfully block " + destination);
                     System.out.println("result[0] is " + result.get(0));
@@ -405,6 +415,8 @@ public class Server extends Thread {
                             if (user.isOnline() == true
                                     && user.getUsername().equals(receivedPacket.getUsername()) == false) {
                                 Socket userSocket = user.getSocket();
+                                //user.setOos(oos);
+                                //user.setOis(ois);
                                 String duplicateLogin = receivedPacket.getUsername().toString() + " has logged in";
                                 Packet duplicateLoginPacket = new Packet(auth, "notification", "0", "0",
                                         duplicateLogin);
@@ -534,7 +546,7 @@ public class Server extends Thread {
                     System.out.println("notify other users!");
                     for (User user : users) {
                         if (user.isOnline() == true) {
-                            String notification = receivedPacket.getUsername() + "has already logged out!";
+                            String notification = receivedPacket.getUsername() + " has already logged out!";
                             Packet notificationPacket = new Packet(auth, "logout", "0", "0", notification);
                             //ObjectOutputStream newoos = new ObjectOutputStream(connectionSocket.getOutputStream());
                             oos.writeObject(Packet.buildString(notificationPacket));

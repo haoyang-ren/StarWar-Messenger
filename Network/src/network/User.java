@@ -28,9 +28,9 @@ public class User {
     private int port;
     private boolean online;
     private LocalDateTime time;
-    static private Socket socket;
-    static private ObjectInputStream ois;
-    static private ObjectOutputStream oos;
+    private Socket socket;
+    private ObjectInputStream ois;
+    private ObjectOutputStream oos;
 
     public User(String username, String password, int block, ArrayList<String> blackList, boolean online, ArrayList<String> pending, Socket socket, LocalDateTime time, int port) {
         this.username = username;
@@ -118,7 +118,7 @@ public class User {
     }
 
     public ObjectInputStream getOis() throws IOException {  
-        this.ois = new ObjectInputStream(socket.getInputStream());
+        //this.ois = new ObjectInputStream(socket.getInputStream());
         return ois;
     }
 
@@ -127,15 +127,13 @@ public class User {
     }
 
     public ObjectOutputStream getOos() throws IOException {
-        this.oos = new ObjectOutputStream(socket.getOutputStream());
+        //this.oos = new ObjectOutputStream(socket.getOutputStream());
         return oos;
     }
 
     public void setOos(ObjectOutputStream oos) {
         this.oos = oos;
     }
-    
-    
     
     
     

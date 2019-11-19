@@ -25,6 +25,8 @@ public class Client extends Thread {
     static String auth = "false";
     ObjectOutputStream oos;
     ObjectInputStream ois;
+    static String username;
+    static String password;
 
     public Client(Socket clientSocket, ObjectInputStream ois) {
         this.clientSocket = clientSocket;
@@ -52,17 +54,15 @@ public class Client extends Thread {
 
         while (true) {
             Thread.sleep(50);
-            System.out.println("Please Enter your Username: ");
-            String username = input.nextLine();
-            System.out.println("Please Enter your Password: ");
-            String password = input.nextLine();
-
+            
+            
+            
             if (auth.equals("false")) {
 
-                //System.out.println("Please Enter your Username: ");
-                //String username = input.nextLine();
-                //System.out.println("Please Enter your Password: ");
-                //String password = input.nextLine();
+                System.out.println("Please Enter your Username: ");
+                username = input.nextLine();
+                System.out.println("Please Enter your Password: ");
+                password = input.nextLine();
                 String login = "User is trying to log in";
                 Packet loginPacket = new Packet(auth, "login", username, password, login);
                 // System.out.println("packet has already created.");
@@ -108,7 +108,7 @@ public class Client extends Thread {
 
                 } else if (commandList[0].equals("whoelsesince") || commandList[0].equals("block")
                         || commandList[0].equals("unblock")) {
-                    System.out.println("block from the user "+ username);
+                    //System.out.println("block from the user "+ "0");
                     Packet requestPacket = new Packet(auth, commandList[0], username, "0", commandList[1]);
                     // ObjectOutputStream oos = new
                     // ObjectOutputStream(clientSocket.getOutputStream());
