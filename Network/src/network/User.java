@@ -118,7 +118,6 @@ public class User {
     }
 
     public ObjectInputStream getOis() throws IOException {  
-        //this.ois = new ObjectInputStream(socket.getInputStream());
         return ois;
     }
 
@@ -127,15 +126,10 @@ public class User {
     }
 
     public ObjectOutputStream getOos() throws IOException {
-        //this.oos = new ObjectOutputStream(socket.getOutputStream());
         return oos;
     }
 
     public void setOos(ObjectOutputStream oos) {
         this.oos = oos;
     }
-    
-    
-    
-
 }

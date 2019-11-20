@@ -383,6 +383,7 @@ public class Server extends Thread {
                                 oos.writeObject(Packet.buildString(duplicateLoginPacket));
                             }
                         }
+                        connectionSocket.setSoTimeout(timeout);
                     }
                     continue;
                 }
@@ -541,6 +542,7 @@ public class Server extends Thread {
                         }
                     }
                     auth = "false";
+                    connectionSocket.setSoTimeout(timeout);
                     continue;
                 }
 
