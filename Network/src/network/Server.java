@@ -37,6 +37,7 @@ public class Server extends Thread {
     static String serverName;
     static int serverPort;
     static int currentPort;
+    static int privatePort;
     static long blockDuration;
     static int timeout;
     private Socket connectionSocket;
@@ -59,7 +60,7 @@ public class Server extends Thread {
         // Get the arguments value
         serverPort = Integer.parseInt(args[0]);
         currentPort = serverPort;
-        // currentPort = Integer.parseInt(args[0]);
+        privatePort = serverPort + 1;
         blockDuration = Long.parseLong(args[1]);
         timeout = Integer.parseInt(args[2]);
         // Create the new server socket
@@ -160,7 +161,7 @@ public class Server extends Thread {
                         if (user.getBlackList().contains(source)) {
                             result.add("false");
                             result.add("Your message could not be delivered as the recipient has blocked you");
-                          
+
                             return result;
                         }
                     }
@@ -170,7 +171,7 @@ public class Server extends Thread {
                         oos.writeObject(Packet.buildString(messeagePacket));
                         result.add("true");
                         result.add("online");
-                        
+
                         return result;
                     } else {
                         String pending = "{Offline message} " + source + ": " + content;
@@ -337,6 +338,39 @@ public class Server extends Thread {
             return result;
         }
 
+        return result;
+    }
+
+    public ArrayList<String> startprivate(String source, String destination) throws IOException {
+        ArrayList<String> result = new ArrayList<String>();
+        if (source.equals(destination)) {
+            result.add("false");
+            result.add("Error. Cannot message privately self");
+            return result;
+        }
+        for (User user : users) {
+            if (user.getUsername().equals(destination)) {
+                if (user.getBlackList().contains(source)) {
+                    result.add("false");
+                    result.add("Your message could not be delivered as the recipient has blocked you");
+                    return result;
+                }
+                if (user.isOnline() == false) {
+                    result.add("false");
+                    result.add("Error. Private messaging to " + destination + " not enabled");
+                    return result;
+                } else {
+                    Packet privatePacket = new Packet("True", "startprivate_listen", "0", "0", "Start private messaging with " + source);
+                    oos = user.getOos();
+                    oos.writeObject(privatePacket);
+                    privatePort++;
+                    result.add("true");
+                    result.add(Integer.toString(privatePort - 1));
+                }
+            }
+        }
+        result.add("false");
+        result.add(destination + " is not a valid user");
         return result;
     }
 
@@ -543,6 +577,30 @@ public class Server extends Thread {
                     }
                     auth = "false";
                     connectionSocket.setSoTimeout(timeout);
+                    continue;
+                }
+
+                if (receivedPacket.getRequest().equals("startprivate")) {
+                    ArrayList<String> fl = startprivate(receivedPacket.getUsername(), receivedPacket.getMessage());
+                    if (fl.get(0).equals("true")) {
+                        Packet privatePacket = new Packet("true", "startprivate_connect", "0", "0", "Start private messaging with " + receivedPacket.getMessage());
+                        for (User user : users) {
+                            if (user.getUsername().equals(receivedPacket.getUsername())) {
+                                oos = user.getOos();
+                                break;
+                            }
+                        }
+                        oos.writeObject(Packet.buildString(privatePacket));
+                    } else {
+                        Packet privateErrorPacket = new Packet("true", "startprivate_error", "0", "0", fl.get(1));
+                        for (User user : users) {
+                            if (user.getUsername().equals(receivedPacket.getUsername())) {
+                                oos = user.getOos();
+                                break;
+                            }
+                        }
+                        oos.writeObject(Packet.buildString(privateErrorPacket));
+                    }
                     continue;
                 }
 

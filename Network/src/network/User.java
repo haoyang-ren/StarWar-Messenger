@@ -11,8 +11,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -23,11 +21,14 @@ public class User {
     private String username;
     private String password;
     private ArrayList<String> blackList;
+    // stored the offline message
     private ArrayList<String> pending;
+    // blocked numbers during the login
     private int block;
     private int port;
     private boolean online;
     private LocalDateTime time;
+    // Each client has individual socket and IOStream
     private Socket socket;
     private ObjectInputStream ois;
     private ObjectOutputStream oos;

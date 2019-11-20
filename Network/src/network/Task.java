@@ -20,6 +20,7 @@ public class Task extends TimerTask{
     
     @Override
     public void run() {
+        // Set the block times to zero after the block_duration
         user.setBlock(0);
     }
     

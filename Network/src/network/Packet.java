@@ -13,86 +13,83 @@ import java.io.Serializable;
  */
 public class Packet implements Serializable {
 
-	private String auth;
-	// convert from boolean to byte[]
-	private String request;
-	// convert from String to byte[]
-	private String username;
-	// covert from String to byte[]
-	private String password;
-	// covert from String to byte[]
-	private String message;
-	// convert from String to byte[]
+    private String auth;
+    private String request;
+    private String username;
+    private String password;
+    private String message;
 
-	public Packet() {
+    public Packet() {
 
-	}
+    }
 
-	public Packet(String auth, String request, String username, String password, String message) {
-		this.auth = auth;
-		this.request = request;
-		this.username = username;
-		this.password = password;
-		this.message = message;
-	}
+    public Packet(String auth, String request, String username, String password, String message) {
+        this.auth = auth;
+        this.request = request;
+        this.username = username;
+        this.password = password;
+        this.message = message;
+    }
 
-	public String getAuth() {
-		return auth;
-	}
+    public String getAuth() {
+        return auth;
+    }
 
-	public void setAuth(String auth) {
-		this.auth = auth;
-	}
+    public void setAuth(String auth) {
+        this.auth = auth;
+    }
 
-	public String getRequest() {
-		return request;
-	}
+    public String getRequest() {
+        return request;
+    }
 
-	public void setRequest(String request) {
-		this.request = request;
-	}
+    public void setRequest(String request) {
+        this.request = request;
+    }
 
-	public String getUsername() {
-		return username;
-	}
+    public String getUsername() {
+        return username;
+    }
 
-	public void setUsername(String username) {
-		this.username = username;
-	}
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
-	public String getPassword() {
-		return password;
-	}
+    public String getPassword() {
+        return password;
+    }
 
-	public void setPassword(String password) {
-		this.password = password;
-	}
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
-	public String getMessage() {
-		return message;
-	}
+    public String getMessage() {
+        return message;
+    }
 
-	public void setMessage(String message) {
-		this.message = message;
-	}
+    public void setMessage(String message) {
+        this.message = message;
+    }
+    
+    // Tear down the packet into Strings
+    public static Packet fromString(String string) {
+        Packet p = new Packet();
+        String strArray[] = string.split("\n");
+        p.setAuth(strArray[0]);
+        p.setRequest(strArray[1]);
+        p.setUsername(strArray[2]);
+        p.setPassword(strArray[3]);
+        p.setMessage(strArray[4]);
 
-	public static Packet fromString(String string) {
-		Packet p = new Packet();
-		String strArray[] = string.split("\n");
-		p.setAuth(strArray[0]);
-		p.setRequest(strArray[1]);
-		p.setUsername(strArray[2]);
-		p.setPassword(strArray[3]);
-		p.setMessage(strArray[4]);
+        return p;
+    }
+    
+    // Composite the packet from string
+    public static String buildString(Packet p) {
+        String string = p.getAuth() + "\n" + p.getRequest() + "\n" + p.getUsername() + "\n" + p.getPassword() + "\n"
+                + p.getMessage();
 
-		return p;
-	}
-
-	public static String buildString(Packet p) {
-		String string = p.getAuth() + "\n" + p.getRequest() + "\n" + p.getUsername() + "\n" + p.getPassword() + "\n"
-				+ p.getMessage();
-
-		return string;
-	}
+        return string;
+    }
 
 }
