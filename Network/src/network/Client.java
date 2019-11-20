@@ -66,11 +66,8 @@ public class Client extends Thread {
                 password = input.nextLine();
                 String login = "User is trying to log in";
                 Packet loginPacket = new Packet(auth, "login", username, password, login);
-                // System.out.println("packet has already created.");
-                // ObjectOutputStream oos = new
-                // ObjectOutputStream(clientSocket.getOutputStream());
+
                 oos.writeObject(Packet.buildString(loginPacket));
-                // System.out.println("packet has already sent.");
             } else {
                 String command = input.nextLine();
                 if (command.length() == 0) {
@@ -125,15 +122,8 @@ public class Client extends Thread {
 
     @Override
     public void run() {
-        System.out.println("Prepare to read the packet");
-
-        //System.out.println(receivedPacket.getMessage().toString());
-        //Packet receivedPacket = Packet.fromString(readBuffer);
-        //System.out.println(Packet.fromString(readBuffer).getMessage().toString());
         while (true) {
-            //System.out.println("Analyse the packet");
             String readBuffer = null;
-//			try {
             try {
                 readBuffer = ois.readObject().toString();
             } catch (ClassNotFoundException e) {
@@ -143,19 +133,7 @@ public class Client extends Thread {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-//			} catch (Exception e) {
-            // TODO Auto-generated catch block
-//				e.printStackTrace();
-//				return;
 
-//			}
-            //try {
-            //receivedPacket = Packet.fromString(readBuffer);
-            //} catch (ClassNotFoundException | IOException e) {
-            // TODO Auto-generated catch block
-            //e.printStackTrace();
-            //return;
-            //}
             if (readBuffer == null) {
                 continue;
             }
@@ -163,19 +141,15 @@ public class Client extends Thread {
             Packet receivedPacket = Packet.fromString(readBuffer);
 
             System.out.println(receivedPacket.getMessage().toString());
-            //System.out.println("Get the request");
             if (receivedPacket.getAuth().equals("true") && auth.equals("false")
                     && receivedPacket.getRequest().equals("login")) {
                 auth = "true";
-                //System.out.println(receivedPacket.getMessage().toString() + " at if condition");
             }
             if (receivedPacket.getRequest().equals("timeout")) {
                 auth = "false";
-                //System.out.println(receivedPacket.getMessage().toString());
             }
             if (receivedPacket.getRequest().equals("logout")) {
                 auth = "false";
-                //System.out.println(receivedPacket.getMessage().toString() + " at if condition");
 
             }
 

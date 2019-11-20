@@ -16,8 +16,10 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -213,10 +215,16 @@ public class Server extends Thread {
                         System.out.println("In the forth condition");
                         return result;
                     } else {
-                        String pending = "Pending :" + source + " " + "content";
-                        ArrayList<String> pendingList = user.getPending();
-                        pendingList.add(pending);
-                        user.setPending(pendingList);
+                        String pending = "{Offline message} " + source + ": " + content;
+                        if (user.getPending() == null) {
+                            ArrayList<String> pendingList = new ArrayList<String>();
+                            pendingList.add(pending);
+                            user.setPending(pendingList);
+                        } else {
+                            ArrayList<String> pendingList = user.getPending();
+                            pendingList.add(pending);
+                            user.setPending(pendingList);
+                        }
                         result.add("true");
                         result.add("offline");
                         System.out.println("In the fifth condition");
@@ -292,8 +300,8 @@ public class Server extends Thread {
                 if (user.isOnline() == true) {
                     result.add(user.getUsername());
                 } else if (user.getTime() != null) {
-                    LocalDateTime now = LocalDateTime.now();
-                    int duration = now.compareTo(user.getTime());
+                    LocalDateTime currentTime = LocalDateTime.now();
+                    long duration = ChronoUnit.SECONDS.between(currentTime, user.getTime());
                     if ((float) duration <= second) {
                         result.add(user.getUsername());
                     }
@@ -504,9 +512,16 @@ public class Server extends Thread {
                     }
                     String result = Arrays.toString(strArray);
                     result = result.substring(1, result.length() - 1);
-                    System.out.println("whoelse is " + result);
+                    if (result.equals("")) {
+                        result = "[ ]";
+                    }
                     Packet whoelsePacket = new Packet(auth, "whoelse", "0", "0", result);
-                    //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                    for (User user : users) {
+                        if (user.getUsername().equals(receivedPacket.getUsername())) {
+                            oos = user.getOos();
+                            break;
+                        }
+                    }
                     oos.writeObject(Packet.buildString(whoelsePacket));
 
                     //connectionSocket.setSoTimeout(timeout);
@@ -521,9 +536,16 @@ public class Server extends Thread {
                     }
                     String result = Arrays.toString(strArray);
                     result = result.substring(1, result.length() - 1);
-                    System.out.println("whoelsesince is " + result);
+                    if (result.equals("")) {
+                        result = "[ ]";
+                    }
                     Packet whoelsesincePacket = new Packet(auth, "whoelsesince", "0", "0", result);
-                    //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                    for (User user : users) {
+                        if (user.getUsername().equals(receivedPacket.getUsername())) {
+                            oos = user.getOos();
+                            break;
+                        }
+                    }
                     oos.writeObject(Packet.buildString(whoelsesincePacket));
 
                     //connectionSocket.setSoTimeout(timeout);
@@ -628,22 +650,38 @@ public class Server extends Thread {
                 }
 
             } catch (SocketTimeoutException ex) {
-                String exceptionInfo = "Your connection has been closed due to Timeout!";
-                /*Packet errorPacket = new Packet(auth, "timeout", "0", "0", exceptionInfo);
-                    ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                String exceptionInfo = "Your connection has been automatically logged out due to Timeout!";
+                Packet errorPacket = new Packet(auth, "timeout", "0", "0", exceptionInfo);
+                try {
                     oos.writeObject(Packet.buildString(errorPacket));
-                    connectionSocket.close();*/
-                System.exit(1);
+                } catch (IOException ex1) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex1);
+                }
+                auth = "False";
+                Packet receivedPacket = null;
+                try {
+                    receivedPacket = Packet.fromString((String) this.ois.readObject());
+                } catch (IOException ex1) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex1);
+                } catch (ClassNotFoundException ex1) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex1);
+                }
+                for (User user : users) {
+                    if (user.getUsername().equals(receivedPacket.getUsername())) {
+                        user.setOnline(false);
+                        user.setSocket(null);
+                        user.setTime(LocalDateTime.now());
+                    }
+                }
+                try {
+                    connectionSocket.setSoTimeout(timeout);
+                } catch (SocketException ex1) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex1);
+                }
 
             } catch (ClassNotFoundException ex) {
                 Logger.getLogger(Server.class
                         .getName()).log(Level.SEVERE, null, ex);
-                /*String exceptionInfo = "Your packet can not be accepted by server!";
-                    Packet errorPacket = new Packet(auth, "timeout", "0", "0", exceptionInfo);
-                    ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
-                    oos.writeObject(Packet.buildString(errorPacket));
-                    connectionSocket.close();*/
-                System.exit(1);
 
             } catch (InterruptedException ex) {
                 Logger.getLogger(Server.class
