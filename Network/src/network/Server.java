@@ -243,13 +243,19 @@ public class Server extends Thread {
                     
                 //}
                 if (user.getBlackList() != null) {
-                    if (user.getUsername().equals(source) == false) {
+                    if (user.getBlackList().contains(source) == true) {
+                        System.out.println("In the blacklist condition!!!!! skip is " + skip);
+                        System.out.println(user.getUsername() + " has the balcklist" + Arrays.toString(user.getBlackList().toArray()));
                         skip = true;
                         break;
                     }
                 }
                 Packet broadcastPacket = new Packet("True", "broadcast", "0", "0", content);
                     skip = false;
+                    System.out.println("In the broadcast condition!!!!! skip is " + skip);
+                    if(user.getBlackList() != null){
+                        System.out.println(user.getUsername() + " has the balcklist" + Arrays.toString(user.getBlackList().toArray()));
+                    }
                     oos = user.getOos();
                     oos.writeObject(Packet.buildString(broadcastPacket));
             }
@@ -257,13 +263,12 @@ public class Server extends Thread {
         if (skip == false) {
             result.add("true");
             result.add("Your message has been broadcast successfully!");
-            System.out.println("In the second condition");
+            System.out.println("In the success return");
             return result;
         } else {
             result.add("false");
             result.add("Your message could not be delivered to some recipients");
-            System.out.println("In the second condition");
-            System.out.println("get return---------");
+            System.out.println("In the failure condition");
         }
         System.out.println("get out of the loop---------");
         return result;
