@@ -240,37 +240,37 @@ public class Server extends Thread {
         for (User user : users) {
             if (user.getUsername().equals(source) == false && user.isOnline() == true) {
                 //if (user.getBlackList() == null) {
-                    
+
                 //}
                 if (user.getBlackList() != null) {
                     if (user.getBlackList().contains(source) == true) {
-                        System.out.println("In the blacklist condition!!!!! skip is " + skip);
-                        System.out.println(user.getUsername() + " has the balcklist" + Arrays.toString(user.getBlackList().toArray()));
+                        //System.out.println("In the blacklist condition!!!!! skip is " + skip);
+                        //System.out.println(user.getUsername() + " has the balcklist" + Arrays.toString(user.getBlackList().toArray()));
                         skip = true;
                         break;
                     }
                 }
                 Packet broadcastPacket = new Packet("True", "broadcast", "0", "0", content);
-                    skip = false;
-                    System.out.println("In the broadcast condition!!!!! skip is " + skip);
-                    if(user.getBlackList() != null){
-                        System.out.println(user.getUsername() + " has the balcklist" + Arrays.toString(user.getBlackList().toArray()));
-                    }
-                    oos = user.getOos();
-                    oos.writeObject(Packet.buildString(broadcastPacket));
+                skip = false;
+                //System.out.println("In the broadcast condition!!!!! skip is " + skip);
+                //if(user.getBlackList() != null){
+                //    System.out.println(user.getUsername() + " has the balcklist" + Arrays.toString(user.getBlackList().toArray()));
+                //}
+                oos = user.getOos();
+                oos.writeObject(Packet.buildString(broadcastPacket));
             }
         }
         if (skip == false) {
             result.add("true");
             result.add("Your message has been broadcast successfully!");
-            System.out.println("In the success return");
+            //System.out.println("In the success return");
             return result;
         } else {
             result.add("false");
             result.add("Your message could not be delivered to some recipients");
-            System.out.println("In the failure condition");
+            //System.out.println("In the failure condition");
         }
-        System.out.println("get out of the loop---------");
+        //System.out.println("get out of the loop---------");
         return result;
     }
 
@@ -590,22 +590,30 @@ public class Server extends Thread {
                             user.setTime(LocalDateTime.now());
                         }
                     }
-                    System.out.println("try to handle log out!");
-                    String logoutInfo = receivedPacket.getUsername() + " has successfully logged out!";
-                    Packet logoutPacket = new Packet(auth, "logout", "0", "0", logoutInfo);
+                    //System.out.println("try to handle log out!");
+                    //String logoutInfo = receivedPacket.getUsername() + " has successfully logged out!";
+                    Packet logoutPacket = new Packet(auth, "logout", "0", "0", "You have successfully logged out!");
                     //ObjectOutputStream oos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                    for (User user : users) {
+                        if (user.getUsername().equals(receivedPacket.getUsername())) {
+                            oos = user.getOos();
+                            break;
+                        }
+                    }
+
                     oos.writeObject(Packet.buildString(logoutPacket));
-                    System.out.println("notify other users!");
+                    //System.out.println("notify other users!");
                     for (User user : users) {
                         if (user.isOnline() == true) {
-                            String notification = receivedPacket.getUsername() + " has already logged out!";
+                            String notification = receivedPacket.getUsername() + " logged out";
                             Packet notificationPacket = new Packet(auth, "logout", "0", "0", notification);
                             //ObjectOutputStream newoos = new ObjectOutputStream(connectionSocket.getOutputStream());
+                            oos = user.getOos();
                             oos.writeObject(Packet.buildString(notificationPacket));
                         }
                     }
                     auth = "false";
-                    System.out.println("Get the end of log out");
+                    //System.out.println("Get the end of log out");
                     //connectionSocket.setSoTimeout(99999999);
                     //break;
                     continue;
