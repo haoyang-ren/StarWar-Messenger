@@ -1,32 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package network;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.io.*;
+import java.net.*;
+import java.time.*;
 import java.util.*;
+import java.time.temporal.ChronoUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 /**
  *
- * @author ryan
+ * @author Haoyang Ren z5183825
  */
 public class Server extends Thread {
 
@@ -762,4 +743,221 @@ public class Server extends Thread {
             }
         }
     }
+}
+
+class Task extends TimerTask{
+    private User user;
+
+    public Task(User user) {
+        this.user = user;
+    }
+    
+    @Override
+    public void run() {
+        // Set the block times to zero after the block_duration
+        user.setBlock(0);
+    }
+    
+}
+
+class User {
+
+    private String username;
+    private String password;
+    private ArrayList<String> blackList;
+    // stored the offline message
+    private ArrayList<String> pending;
+    // blocked numbers during the login
+    private int block;
+    private int port;
+    private boolean online;
+    private LocalDateTime time;
+    // Each client has individual socket and IOStream
+    private Socket socket;
+    private ObjectInputStream ois;
+    private ObjectOutputStream oos;
+
+    public User(String username, String password, int block, ArrayList<String> blackList, boolean online, ArrayList<String> pending, Socket socket, LocalDateTime time, int port) {
+        this.username = username;
+        this.password = password;
+        this.block = block;
+        this.blackList = blackList;
+        this.online = online;
+        this.pending = pending;
+        this.socket = socket;
+        this.time = time;
+        this.port = port;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public int getBlock() {
+        return block;
+    }
+
+    public void setBlock(int block) {
+        this.block = block;
+    }
+
+    public ArrayList<String> getBlackList() {
+        return blackList;
+    }
+
+    public void setBlackList(ArrayList<String> blackList) {
+        this.blackList = blackList;
+    }
+
+    public boolean isOnline() {
+        return online;
+    }
+
+    public void setOnline(boolean online) {
+        this.online = online;
+    }
+
+    public ArrayList<String> getPending() {
+        return pending;
+    }
+
+    public void setPending(ArrayList<String> pending) {
+        this.pending = pending;
+    }
+
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
+
+    public LocalDateTime getTime() {
+        return time;
+    }
+
+    public void setTime(LocalDateTime time) {
+        this.time = time;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public ObjectInputStream getOis() throws IOException {  
+        return ois;
+    }
+
+    public void setOis(ObjectInputStream ois) {
+        this.ois = ois;
+    }
+
+    public ObjectOutputStream getOos() throws IOException {
+        return oos;
+    }
+
+    public void setOos(ObjectOutputStream oos) {
+        this.oos = oos;
+    }
+}
+
+class Packet implements Serializable {
+
+    private String auth;
+    private String request;
+    private String username;
+    private String password;
+    private String message;
+
+    public Packet() {
+
+    }
+
+    public Packet(String auth, String request, String username, String password, String message) {
+        this.auth = auth;
+        this.request = request;
+        this.username = username;
+        this.password = password;
+        this.message = message;
+    }
+
+    public String getAuth() {
+        return auth;
+    }
+
+    public void setAuth(String auth) {
+        this.auth = auth;
+    }
+
+    public String getRequest() {
+        return request;
+    }
+
+    public void setRequest(String request) {
+        this.request = request;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+    
+    // Tear down the packet into Strings
+    public static Packet fromString(String string) {
+        Packet p = new Packet();
+        String strArray[] = string.split("\n");
+        p.setAuth(strArray[0]);
+        p.setRequest(strArray[1]);
+        p.setUsername(strArray[2]);
+        p.setPassword(strArray[3]);
+        p.setMessage(strArray[4]);
+
+        return p;
+    }
+    
+    // Composite the packet from string
+    public static String buildString(Packet p) {
+        String string = p.getAuth() + "\n" + p.getRequest() + "\n" + p.getUsername() + "\n" + p.getPassword() + "\n"
+                + p.getMessage();
+
+        return string;
+    }
+
 }
